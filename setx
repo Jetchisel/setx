@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
 # ============================================================================================ #
-#: Title           : setx
-#: Sypnosis        : setx
+#: Title           : setx                                                                      #
+#: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
+#: Last Edit       : Tue May 31 21:15:01 PHT 2016 / Tue May 31 13:15:01 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
-#: Description     :
-#: Options         :
-#: Home Page       :
-#: ExtComm         :
+#: Description     : Insert/Add 'set -x' on the second line/after the shebang.                 #
+#: Options         : [-a|--append] [-d|--delete] -h|?|--help                                   #
+#: Home Page       : NONE                                                                      #
+#: ExtComm         : ed,file                                                                   #
 # ============================================================================================ #
 
 # ******************************************************************************************** #
@@ -41,7 +41,7 @@ die() {
 # ******************************************************************************************** #
 
 Missing=()
-ExtComm=(   )
+ExtComm=(ed file)
 MissingMessage="is either not installed or it is not in your PATH!"
 ExitMessage="Please install the following: "
 
@@ -56,22 +56,72 @@ done
 
 # ******************************************************************************************** #
 #                                                                                              #
+#                                     The help/usage menu.                                     #
+#                                                                                              #
+# ******************************************************************************************** #
+
+ShowHelp() {
+   cat <<EOF
+
+Usage: ${BASH_SOURCE##*/} OPTION FILE
+
+Options:
+  -a, --append   Append 'set -x' at the second line after the shebang.
+  -d, --delete   Removed 'set -x' at the second line after the shebang.
+  -h, --help     Show this help.
+  -a, --about    A brief info.
+  -l, --license  Show license.
+
+EOF
+return
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
 #
 #                                                                                              #
 # ******************************************************************************************** #
 
+while (($#)); do 
+  
+  [[ $(file --mime-type -b $2) != text* ]] && die "$2 is not a text file!"
+  
+  { read -r first; read -r second ; } < "$2"
+  
+  if [[ ${first:0:2} != '#!' || $first != *@(bash|ash|sh|ksh|zsh) ]]; then
+    die "$2 does not have a shebang!"
+  fi
 
-
+  case $1 in
+    -a|--append) 
+        [[ $second = 'set -x' ]] && die "$2 is already in debug mode!" 1 
+        printf '%s\n' '2i' 'set -x' . w q | ed -s "$2" && \  
+        die "Successfully added 'set -x' after the shebang!" 0
+        ;;
+    -d|--delete) 
+        if [[ $second = 'set -x' ]]; then 
+          printf '%s\n' '2d' w q | ed -s "$2" && \
+          die "Removed 'set -x' after the shebang!" 0
+        else 
+          die "$2 is not in debug mode, nothing to remove!" 1
+        fi
+        ;;
+    -h|\?|--help) ShowHelp
+        exit 0
+        ;;
+     *) ShowHelp
+        exit 0
+        ;;
+  esac
+done
 
 # ******************************************************************************************** #
 #                                                                                              #
-#
+#                   Show usage/help menu if no option or argument is given.                    #
 #                                                                                              #
 # ******************************************************************************************** #
 
-
-
-
+ShowHelp
 
 # ******************************************************************************************** #
 #                                                                                              #
