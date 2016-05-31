@@ -4,7 +4,7 @@
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Tue May 31 21:16:44 PHT 2016 / Tue May 31 13:16:44 UTC 2016               #
+#: Last Edit       : Tue May 31 22:15:59 PHT 2016 / Tue May 31 14:15:59 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -83,6 +83,10 @@ return
 # ******************************************************************************************** #
 
 while (($#)); do 
+  if (( $# < 2 )); then 
+    ShowHelp 
+    exit 1 
+  fi
   
   [[ $(file --mime-type -b $2) != text* ]] && die "$2 is not a text file!"
   
