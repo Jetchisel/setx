@@ -4,7 +4,7 @@
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Wed Jun  1 12:04:15 PHT 2016 / Wed Jun  1 04:04:15 UTC 2016               #
+#: Last Edit       : Wed Jun  1 12:19:41 PHT 2016 / Wed Jun  1 04:19:41 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -99,7 +99,8 @@ while (($#)); do
   case $1 in
     -i|--insert) 
         [[ $second = 'set -x' ]] && die "$2 is already in debug mode!" 1 
-        printf '%s\n' '2i' 'set -x' . w q | ed -s "$2" && \  
+        
+        printf '%s\n' '2i' 'set -x' . w q | ed -s "$2" && \ 
         die "Successfully added 'set -x' after the shebang!" 0
         ;;
     -d|--delete) 
