@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-set -x
 
 # ============================================================================================ #
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Wed Jun  1 12:23:45 PHT 2016 / Wed Jun  1 04:23:45 UTC 2016               #
+#: Last Edit       : Wed Jun  1 12:24:45 PHT 2016 / Wed Jun  1 04:24:45 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
