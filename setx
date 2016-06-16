@@ -6,11 +6,11 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Thu Jun 16 10:33:20 PHT 2016 / Thu Jun 16 02:33:20 UTC 2016               #
+#: Last Edit       : Thu Jun 16 19:43:00 PHT 2016 / Thu Jun 16 11:43:00 UTC 2016               #
 #: License         : GPLv3                                                                     #
-#: Version         : 1.0.0                                                                     #
+#: Version         : 1.0.6                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
-#: Description     : Insert/Add 'set -x' on the second line/after the shebang.                 #
+#: Description     : Insert/Add `Debug code' on the second line/after the shebang.             #
 #: Options         : [-i|--insert] [-d|--delete] [-h|?|--help]                                 #
 #: Home Page       : NONE                                                                      #
 #: ExtComm         : ed,file                                                                   #
@@ -49,7 +49,7 @@ ExitMessage="Please install the following: "
 
 for apps in "${ExtComm[@]}"; do
   if ! type -P "$apps" >/dev/null; then
-    echo "$apps $MissingMessage" >&2
+    printf '%s %s\n' "$apps" "$MissingMessage" >&2
     Missing+=("$apps")
   fi
 done
@@ -80,7 +80,23 @@ return
 
 # ******************************************************************************************** #
 #                                                                                              #
-#             Continue looping through the arguments/options until there are none.             #
+#                              Function to insert the debug code.                              #
+#                                                                                              #
+# ******************************************************************************************** #
+
+FiLe=$2 
+
+InsertDebug() {
+  local DebugCode LineNumber
+  LineNumber=$1
+  DebugCode=('set -x' PS4=''\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'''\')
+
+  printf '%s\n' "$LineNumber" "${DebugCode[@]}" . w q | ed -s "$FiLe"
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#               Continue looping through the arguments/options until none left.                #
 #                                                                                              #
 # ******************************************************************************************** #
 
@@ -125,15 +141,15 @@ while (($#)); do
         [[ $second = 'set -x' ]] && die "$File is already in debug mode!" 1 
         
         if (( TotalLines == 1 )); then 
-          printf '%s\n' '$a' 'set -x' . w q | ed -s "$2" && die "Successfully added 'set -x' after the shebang of $File" 0
+          InsertDebug '$a' && die "Successfully added debug after the shebang of $File" 0
         else 
-          printf '%s\n' '2i' 'set -x' . w q | ed -s "$2" && die "Successfully added 'set -x' after the shebang of $File" 0 
+          InsertDebug '2i' && die "Successfully added debug after the shebang of $File" 0 
         fi
         ;;
     -d|--delete) 
         if [[ $second = 'set -x' ]]; then 
-          if printf '%s\n' '2d' w q | ed -s "$2"; then
-            die "Removed 'set -x' after the shebang of $File" 0
+          if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$2"; then 
+            die "Removed 'debug' after the shebang of $File" 0
           fi
         else 
           die "$File is not in debug mode, nothing to remove!" 1
@@ -143,7 +159,7 @@ while (($#)); do
         exit 0
         ;;
      *) ShowHelp
-        exit 0
+        exit 1 
         ;;
   esac
 done
