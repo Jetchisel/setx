@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
+shopt -s extglob
+
 # ============================================================================================ #
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Wed Jun  1 12:24:45 PHT 2016 / Wed Jun  1 04:24:45 UTC 2016               #
+#: Last Edit       : Thu Jun 16 09:39:39 PHT 2016 / Thu Jun 16 01:39:39 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -87,30 +89,51 @@ while (($#)); do
     ShowHelp 
     exit 1 
   fi
+
+  File=""\`$2"""'" 
+  FileType=$(file --mime-type -b -- "$2") 
   
-  [[ $(file --mime-type -b -- $2) != text* ]] && die "$2 is not a text file!"
+  [[ $FileType = "cannot open $File (No such file or directory)" ]] && die "$FileType" 1
+  [[ $FileType = "cannot open $File (Permission denied)" ]] && die "$FileType" 1
+  [[ $FileType = "inode/x-empty" ]] && die "$File is an empty file!" 1
+  [[ $FileType = text* ]] || die "File type of $File is $FileType" 1
+  TotalLines=$(ed -s "$2" <<< $'$=') 
   
   { read -r first; read -r second ; } < "$2"
   
-  if [[ ${first:0:2} != '#!' || $first != *@(bash|ash|sh|ksh|zsh) ]]; then
-    die "$2 does not have a shebang!"
+  
+  NotShell() { 
+    die "$File does not appear to be a shell script: [$first]" 1
+  }
+  
+  [[ ${first:0:2} = '#!' ]] || NotShell 
+  
+  if [[ ${first#*+( )} = -* ]]; then 
+    [[ ${first%+( )*} != *@(bash|ash|sh|ksh|zsh) ]] && NotShell 
+  fi  
+  
+  if [[ ${first#*+( )} != -* ]]; then 
+    [[ ${first#*+( )} = *@(bash|ash|sh|ksh|zsh) ]] || NotShell 
   fi
-
+  
   case $1 in
     -i|--insert) 
-        [[ $second = 'set -x' ]] && die "$2 is already in debug mode!" 1 
         
-        if printf '%s\n' '2i' 'set -x' . w q | ed -s "$2"; then
-          die "Successfully added 'set -x' after the shebang!" 0
+        [[ $second = 'set -x' ]] && die "$File is already in debug mode!" 1 
+        
+        if (( TotalLines == 1 )); then 
+          printf '%s\n' '$a' 'set -x' . w q | ed -s "$2" && die "Successfully added 'set -x' after the shebang of $File" 0
+        else 
+          printf '%s\n' '2i' 'set -x' . w q | ed -s "$2" && die "Successfully added 'set -x' after the shebang of $File" 0 
         fi
         ;;
     -d|--delete) 
         if [[ $second = 'set -x' ]]; then 
           if printf '%s\n' '2d' w q | ed -s "$2"; then
-            die "Removed 'set -x' after the shebang!" 0
+            die "Removed 'set -x' after the shebang of $File" 0
           fi
         else 
-          die "$2 is not in debug mode, nothing to remove!" 1
+          die "$File is not in debug mode, nothing to remove!" 1
         fi
         ;;
     -h|\?|--help) ShowHelp
@@ -136,7 +159,7 @@ ShowHelp
 #                                                                                              #
 # ******************************************************************************************** #
 
-exit 0
+exit $? 
 
 # ============================================================================================ #
 #                                                                                              #
