@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Thu Jun 16 09:39:39 PHT 2016 / Thu Jun 16 01:39:39 UTC 2016               #
+#: Last Edit       : Thu Jun 16 10:33:20 PHT 2016 / Thu Jun 16 02:33:20 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -97,6 +97,9 @@ while (($#)); do
   [[ $FileType = "cannot open $File (Permission denied)" ]] && die "$FileType" 1
   [[ $FileType = "inode/x-empty" ]] && die "$File is an empty file!" 1
   [[ $FileType = text* ]] || die "File type of $File is $FileType" 1
+  
+  [[ -w $2 ]] || die "cannot write to $File (Permission denied)" 1
+  [[ -r $2 ]] || die "cannot read $File (Permission denied)" 1
   TotalLines=$(ed -s "$2" <<< $'$=') 
   
   { read -r first; read -r second ; } < "$2"
