@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Fri Jun 17 19:33:09 PHT 2016 / Fri Jun 17 11:33:09 UTC 2016               #
+#: Last Edit       : Sat Jun 18 07:18:28 PHT 2016 / Fri Jun 17 23:18:28 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.1.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -161,36 +161,24 @@ TestFile() {
 
 # ******************************************************************************************** #
 #                                                                                              #
-#                  If only one input (argument/option) is given by the user.                   #
+#           Loop through the command line input (arguments/options) and process it.            #
 #                                                                                              #
 # ******************************************************************************************** #
 
-while (( $# == 1 )); do
-    case $1 in
-       -a|--about)
+while (( $# )); do
+  case $1 in
+    -a|--about)
+           (( $# > 1 )) && die "Invalid option!, try: ""\`"--help"""'" 1
            About
            exit
            ;;
-       -h|-\?|--help)
+    -h|-\?|--help)
+           (( $# > 1 )) && die "Invalid option!, try: ""\`"--help"""'" 1
            ShowHelp
            exit
            ;;
-        *) 
-          ShowHelp 
-          exit 1
-           ;;
-     esac
-done
-
-# ******************************************************************************************** #
-#                                                                                              #
-#                If exactly two input (arguments/options) is given by the user.                #
-#                                                                                              #
-# ******************************************************************************************** #
-
-while (( $# == 2 )); do
-  case $1 in
     -i|--insert)  
+        [[ ! "$FiLe" ]] && die "No script is given!, try: ""\`"--help"""'" 1
         TestFile 
         
         [[ $second = 'set -x' ]] && die "$File is already in debug mode!" 1 
@@ -202,6 +190,7 @@ while (( $# == 2 )); do
         fi
         ;;
     -d|--delete) 
+        [[ ! "$FiLe" ]] && die "No script is given!, try: ""\`"--help"""'" 1
         TestFile 
         if [[ $second = 'set -x' ]]; then 
           if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$FiLe"; then 
@@ -211,22 +200,11 @@ while (( $# == 2 )); do
           die "$File is not in debug mode, nothing to remove!" 1
         fi
         ;;
-    -h|\?|--help) ShowHelp
-        exit 0
-        ;;
-     *) ShowHelp
-        exit 1 
-        ;;
-  esac
+       *) ShowHelp >&2
+          exit 1
+        ;; 
+ esac
 done
-
-# ******************************************************************************************** #
-#                                                                                              #
-#          Show usage/help menu if none or more than two option or argument is given.          #
-#                                                                                              #
-# ******************************************************************************************** #
-
-ShowHelp
 
 # ******************************************************************************************** #
 #                                                                                              #
