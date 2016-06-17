@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Fri Jun 17 11:12:26 PHT 2016 / Fri Jun 17 03:12:26 UTC 2016               #
+#: Last Edit       : Fri Jun 17 13:13:49 PHT 2016 / Fri Jun 17 05:13:49 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.0.8                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -131,9 +131,19 @@ InsertDebug() {
 
 while (($#)); do 
   if (( $# < 2 )); then 
-    ShowHelp 
-    exit 1 
-  fi
+    [[ -f $1 ]] && { ShowHelp >&2; exit 1; } 
+    case $1 in
+     -a|--about) About
+        exit 0
+        ;;
+     -h|\?|--help) ShowHelp
+        exit 0
+        ;;
+     *) ShowHelp
+        exit 1
+        ;;
+     esac
+  fi  
 
   File=""\`$FiLe"""'" 
   FileType=$(file --mime-type -b -- "$FiLe") 
