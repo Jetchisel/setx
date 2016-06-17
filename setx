@@ -6,14 +6,14 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Thu Jun 16 19:43:00 PHT 2016 / Thu Jun 16 11:43:00 UTC 2016               #
+#: Last Edit       : Fri Jun 17 11:12:26 PHT 2016 / Fri Jun 17 03:12:26 UTC 2016               #
 #: License         : GPLv3                                                                     #
-#: Version         : 1.0.6                                                                     #
+#: Version         : 1.0.8                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
 #: Description     : Insert/Add `Debug code' on the second line/after the shebang.             #
 #: Options         : [-i|--insert] [-d|--delete] [-h|?|--help]                                 #
 #: Home Page       : NONE                                                                      #
-#: ExtComm         : ed,file                                                                   #
+#: ExtComm         : cat,ed,file                                                               #
 # ============================================================================================ #
 
 # ******************************************************************************************** #
@@ -68,14 +68,43 @@ ShowHelp() {
 Usage: ${BASH_SOURCE##*/} OPTION FILE
 
 Options:
-  -i, --insert   Insert 'set -x' at the second line after the shebang.
-  -d, --delete   Removed 'set -x' at the second line after the shebang.
+  -i, --insert   Insert \`set -x' and \`PS4' debug code below the shebang.
+  -d, --delete   Remove \`set -x' and \`PS4' debug code below the shebang.
   -h, --help     Show this help.
   -a, --about    A brief info.
-  -l, --license  Show license.
 
 EOF
-return
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                        Function to print some info about the script.                         #
+#                                                                                              #
+# ******************************************************************************************** #
+
+About() {
+   cat <<EOF
+
+                           setx
+
+Copyright  (c)  2016 Jason V. Ferrer  '<jetchisel@opensuse.org>'
+
+A bash shell  script  that  inserts \`set -x' and a \`PS4' debug 
+code right after the shebang. Shell script is a bit more verbose 
+when  the code is  added in  the script in question. This script 
+relies  heavily on GNU ed(1)  for editing  the shell  script and 
+file(1) for testing the file type of the script in question.
+
+This  program is  free software;  you can redistribute it and/or
+modify  it  under  the terms  of the  GNU General Public License
+version 3 as published by the Free Software Foundation.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY  or  FITNESS  FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+EOF
 }
 
 # ******************************************************************************************** #
@@ -88,8 +117,8 @@ FiLe=$2
 
 InsertDebug() {
   local DebugCode LineNumber
-  LineNumber=$1
-  DebugCode=('set -x' PS4=''\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'''\')
+  LineNumber=$1 
+  DebugCode=('set -x' PS4=''\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'''\') 
 
   printf '%s\n' "$LineNumber" "${DebugCode[@]}" . w q | ed -s "$FiLe"
 }
@@ -106,8 +135,8 @@ while (($#)); do
     exit 1 
   fi
 
-  File=""\`$2"""'" 
-  FileType=$(file --mime-type -b -- "$2") 
+  File=""\`$FiLe"""'" 
+  FileType=$(file --mime-type -b -- "$FiLe") 
   
   [[ $FileType = "cannot open $File (No such file or directory)" ]] && die "$FileType" 1
   [[ $FileType = "cannot open $File (Permission denied)" ]] && die "$FileType" 1
@@ -116,9 +145,9 @@ while (($#)); do
   
   [[ -w $2 ]] || die "cannot write to $File (Permission denied)" 1
   [[ -r $2 ]] || die "cannot read $File (Permission denied)" 1
-  TotalLines=$(ed -s "$2" <<< $'$=') 
+  TotalLines=$(ed -s "$FiLe" <<< $'$=') 
   
-  { read -r first; read -r second ; } < "$2"
+  { read -r first; read -r second ; } < "$FiLe"
   
   
   NotShell() { 
@@ -148,7 +177,7 @@ while (($#)); do
         ;;
     -d|--delete) 
         if [[ $second = 'set -x' ]]; then 
-          if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$2"; then 
+          if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$FiLe"; then 
             die "Removed 'debug' after the shebang of $File" 0
           fi
         else 
