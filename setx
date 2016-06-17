@@ -6,9 +6,9 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Fri Jun 17 13:13:49 PHT 2016 / Fri Jun 17 05:13:49 UTC 2016               #
+#: Last Edit       : Fri Jun 17 19:33:09 PHT 2016 / Fri Jun 17 11:33:09 UTC 2016               #
 #: License         : GPLv3                                                                     #
-#: Version         : 1.0.8                                                                     #
+#: Version         : 1.1.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
 #: Description     : Insert/Add `Debug code' on the second line/after the shebang.             #
 #: Options         : [-i|--insert] [-d|--delete] [-h|?|--help]                                 #
@@ -119,32 +119,16 @@ InsertDebug() {
   local DebugCode LineNumber
   LineNumber=$1 
   DebugCode=('set -x' PS4=''\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'''\') 
-
   printf '%s\n' "$LineNumber" "${DebugCode[@]}" . w q | ed -s "$FiLe"
 }
 
 # ******************************************************************************************** #
 #                                                                                              #
-#               Continue looping through the arguments/options until none left.                #
+#      Function to do some various if not extensive testing about the file type of `$2'.       #
 #                                                                                              #
 # ******************************************************************************************** #
 
-while (($#)); do 
-  if (( $# < 2 )); then 
-    [[ -f $1 ]] && { ShowHelp >&2; exit 1; } 
-    case $1 in
-     -a|--about) About
-        exit 0
-        ;;
-     -h|\?|--help) ShowHelp
-        exit 0
-        ;;
-     *) ShowHelp
-        exit 1
-        ;;
-     esac
-  fi  
-
+TestFile() {
   File=""\`$FiLe"""'" 
   FileType=$(file --mime-type -b -- "$FiLe") 
   
@@ -153,29 +137,61 @@ while (($#)); do
   [[ $FileType = "inode/x-empty" ]] && die "$File is an empty file!" 1
   [[ $FileType = text* ]] || die "File type of $File is $FileType" 1
   
-  [[ -w $2 ]] || die "cannot write to $File (Permission denied)" 1
-  [[ -r $2 ]] || die "cannot read $File (Permission denied)" 1
+  [[ -w $FiLe ]] || die "cannot write to $File (Permission denied)" 1
+  [[ -r $FiLe ]] || die "cannot read $File (Permission denied)" 1
   TotalLines=$(ed -s "$FiLe" <<< $'$=') 
   
   { read -r first; read -r second ; } < "$FiLe"
   
   
-  NotShell() { 
+  NotShell() {
     die "$File does not appear to be a shell script: [$first]" 1
   }
-  
+
   [[ ${first:0:2} = '#!' ]] || NotShell 
   
   if [[ ${first#*+( )} = -* ]]; then 
     [[ ${first%+( )*} != *@(bash|ash|sh|ksh|zsh) ]] && NotShell 
-  fi  
+  fi
   
   if [[ ${first#*+( )} != -* ]]; then 
     [[ ${first#*+( )} = *@(bash|ash|sh|ksh|zsh) ]] || NotShell 
   fi
-  
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                  If only one input (argument/option) is given by the user.                   #
+#                                                                                              #
+# ******************************************************************************************** #
+
+while (( $# == 1 )); do
+    case $1 in
+       -a|--about)
+           About
+           exit
+           ;;
+       -h|-\?|--help)
+           ShowHelp
+           exit
+           ;;
+        *) 
+          ShowHelp 
+          exit 1
+           ;;
+     esac
+done
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                If exactly two input (arguments/options) is given by the user.                #
+#                                                                                              #
+# ******************************************************************************************** #
+
+while (( $# == 2 )); do
   case $1 in
-    -i|--insert) 
+    -i|--insert)  
+        TestFile 
         
         [[ $second = 'set -x' ]] && die "$File is already in debug mode!" 1 
         
@@ -186,6 +202,7 @@ while (($#)); do
         fi
         ;;
     -d|--delete) 
+        TestFile 
         if [[ $second = 'set -x' ]]; then 
           if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$FiLe"; then 
             die "Removed 'debug' after the shebang of $File" 0
@@ -205,7 +222,7 @@ done
 
 # ******************************************************************************************** #
 #                                                                                              #
-#                   Show usage/help menu if no option or argument is given.                    #
+#          Show usage/help menu if none or more than two option or argument is given.          #
 #                                                                                              #
 # ******************************************************************************************** #
 
