@@ -24,5 +24,6 @@ setx [OPTION] [FILE
 For more info about debugging please have a look at the following site.
 
 https://www.shellcheck.net
+
 http://mywiki.wooledge.org/BashGuide/Practices#Debugging
 

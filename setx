@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Sat Jun 18 12:04:12 PHT 2016 / Sat Jun 18 04:04:12 UTC 2016               #
+#: Last Edit       : Sat Jun 18 12:46:34 PHT 2016 / Sat Jun 18 04:46:34 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.2.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -83,6 +83,17 @@ EOF
 
 # ******************************************************************************************** #
 #                                                                                              #
+#                     Show the help/usage if no option/arguments is given.                     #
+#                                                                                              #
+# ******************************************************************************************** #
+
+if ((!$#)); then
+  ShowHelp >&2
+  exit 1
+fi
+
+# ******************************************************************************************** #
+#                                                                                              #
 #                        Function to print some info about the script.                         #
 #                                                                                              #
 # ******************************************************************************************** #
@@ -137,7 +148,7 @@ TestFile() {
   File=""\`$FiLe"""'" 
   FileType=$(file --mime-type -b -- "$FiLe") 
   
-  [[ $FileType = "cannot open $File (No such file or directory)" ]] && die "$FileType" 1
+  [[ $FileType = "cannot open $File (No such file or directory)" ]] && die "$FileType" 1 
   [[ $FileType = "cannot open $File (Permission denied)" ]] && die "$FileType" 1
   [[ $FileType = "inode/x-empty" ]] && die "$File is an empty file!" 1
   [[ $FileType = text* ]] || die "File type of $File is $FileType" 1
@@ -170,7 +181,7 @@ TestFile() {
 #                                                                                              #
 # ******************************************************************************************** #
 
-while (( $# )); do
+while (($#)); do
   case $1 in
     -a|--about)
            (( $# > 1 )) && die "Invalid option!, try: ""\`"--help"""'" 1
@@ -210,15 +221,6 @@ while (( $# )); do
         ;; 
   esac
 done
-
-# ******************************************************************************************** #
-#                                                                                              #
-#                     Show the help/usage if no option/arguments is given.                     #
-#                                                                                              #
-# ******************************************************************************************** #
-
-ShowHelp >&2
-exit 1
 
 # ============================================================================================ #
 #                                                                                              #
