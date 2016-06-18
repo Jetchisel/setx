@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Sat Jun 18 12:51:29 PHT 2016 / Sat Jun 18 04:51:29 UTC 2016               #
+#: Last Edit       : Sat Jun 18 22:32:14 PHT 2016 / Sat Jun 18 14:32:14 UTC 2016               #
 #: License         : GPLv3                                                                     #
 #: Version         : 1.2.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -145,7 +145,7 @@ InsertDebug() {
 # ******************************************************************************************** #
 
 TestFile() {
-  File=""\`$FiLe"""'" 
+  File=\`"$FiLe"\' 
   FileType=$(file --mime-type -b -- "$FiLe") 
   
   [[ $FileType = "cannot open $File (No such file or directory)" ]] && die "$FileType" 1 
@@ -184,17 +184,17 @@ TestFile() {
 while (($#)); do
   case $1 in
     -a|--about)
-           (( $# > 1 )) && die "Invalid option!, try: ""\`"--help"""'" 1
+           (( $# > 1 )) && die "Invalid option!, try: \`--help'" 1
            About
            exit
            ;;
     -h|-\?|--help)
-           (( $# > 1 )) && die "Invalid option!, try: ""\`"--help"""'" 1
+           (( $# > 1 )) && die "Invalid option!, try: \`--help'" 1
            ShowHelp
            exit
            ;;
     -i|--insert)  
-        [[ ! "$FiLe" ]] && die "No script is given!, try: ""\`"--help"""'" 1
+        [[ ! "$FiLe" ]] && die "No script is given!, try: \`--help'" 1
         TestFile 
         
         [[ $second = 'set -x' ]] && die "$File is already in debug mode!" 1 
@@ -206,7 +206,7 @@ while (($#)); do
         fi
         ;;
     -d|--delete) 
-        [[ ! "$FiLe" ]] && die "No script is given!, try: ""\`"--help"""'" 1
+        [[ ! "$FiLe" ]] && die "No script is given!, try: \`--help'" 1
         TestFile 
         if [[ $second = 'set -x' ]]; then 
           if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$FiLe"; then 
