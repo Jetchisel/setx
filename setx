@@ -6,9 +6,9 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Sat Jun 18 07:18:28 PHT 2016 / Fri Jun 17 23:18:28 UTC 2016               #
+#: Last Edit       : Sat Jun 18 11:50:16 PHT 2016 / Sat Jun 18 03:50:16 UTC 2016               #
 #: License         : GPLv3                                                                     #
-#: Version         : 1.1.0                                                                     #
+#: Version         : 1.2.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
 #: Description     : Insert/Add `Debug code' on the second line/after the shebang.             #
 #: Options         : [-i|--insert] [-d|--delete] [-h|?|--help]                                 #
@@ -23,18 +23,23 @@ shopt -s extglob
 # ******************************************************************************************** #
 
 warn() {
-  printf '%s\n' "${BASH_SOURCE##*/}: $*" >&2
+  printf '%s\n' "${BASH_SOURCE##*/}: $*" 
 }
 
 die() {
-  local st=0
-  case $2 in
-    *[^0-9]*|'') :;;
-    *) st=$2;;
+  local st=$? 
+  case $2 in  
+    *[^0-9]*|'') :;; 
+    *) st=$2;; 
   esac
-  warn "$1"
-  exit "$st"
-}
+
+  case $st in 
+    0) warn "$1" ;;  
+    *) warn "$1" >&2;; 
+  esac
+
+  exit "$st"  
+} 
 
 # ******************************************************************************************** #
 #                                                                                              #
@@ -203,16 +208,17 @@ while (( $# )); do
        *) ShowHelp >&2
           exit 1
         ;; 
- esac
+  esac
 done
 
 # ******************************************************************************************** #
 #                                                                                              #
-#                                    Set the exit staus.                                       #
+#                     Show the help/usage if no option/arguments is given.                     #
 #                                                                                              #
 # ******************************************************************************************** #
 
-exit $? 
+ShowHelp >&2
+exit 1
 
 # ============================================================================================ #
 #                                                                                              #
