@@ -6,14 +6,14 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION] [FILE]                                                      #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Sat Jun 18 22:32:14 PHT 2016 / Sat Jun 18 14:32:14 UTC 2016               #
+#: Last Edit       : Mon Jun 20 14:34:31 PHT 2016 / Mon Jun 20 06:34:31 UTC 2016               #
 #: License         : GPLv3                                                                     #
-#: Version         : 1.2.0                                                                     #
+#: Version         : 1.3.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
 #: Description     : Insert/Add `Debug code' on the second line/after the shebang.             #
-#: Options         : [-i|--insert] [-d|--delete] [-h|?|--help]                                 #
+#: Options         : [-x|--xtrace] [-s|--step] [-u|--undo] [-h|?|--help] [-a|--about]          #
 #: Home Page       : NONE                                                                      #
-#: ExtComm         : cat,ed,file                                                               #
+#: ExtComm         : cat,ed,file,grep                                                          #
 # ============================================================================================ #
 
 # ******************************************************************************************** #
@@ -73,8 +73,9 @@ ShowHelp() {
 Usage: ${BASH_SOURCE##*/} OPTION FILE
 
 Options:
-  -i, --insert   Insert \`set -x' and \`PS4' debug code below the shebang.
-  -d, --delete   Remove \`set -x' and \`PS4' debug code below the shebang.
+  -s, --step     Make the execution of script slower using a trap.
+  -u, --undo     Undo or remove all the \`debug' code in the script.
+  -x, --xtrace   Add \`set -x' and \`PS4' debug code below the shebang.
   -h, --help     Show this help.
   -a, --about    A brief info.
 
@@ -103,21 +104,23 @@ About() {
 
                            setx
 
-Copyright  (c)  2016 Jason V. Ferrer  '<jetchisel@opensuse.org>'
+Copyright  (c)  2016 Jason V. Ferrer '<jetchisel@opensuse.org>'
 
-A bash shell  script  that  inserts \`set -x' and a \`PS4' debug 
-code right after the shebang. Shell script is a bit more verbose 
-when  the code is  added in  the script in question. This script 
-relies  heavily on GNU ed(1)  for editing  the shell  script and 
-file(1) for testing the file type of the script in question.
+A bash shell  script  that inserts \`set -x' and a \`PS4' debug 
+code or a trap to make the script execute line by line by using 
+the  return  key.  Shell  script is  more verbose when the code
+is  added in the script in question. This script  requires  the 
+follwing  GNU utilities, ed(1) for editing the shell script and
+file(1)  for  testing  file type of the script in question and.
+grep for matching patterns against the debug codes.
 
-This  program is  free software;  you can redistribute it and/or
-modify  it  under  the terms  of the  GNU General Public License
+This  program is free software;  you can redistribute it and/or
+modify  it  under the terms  of the  GNU General Public License
 version 3 as published by the Free Software Foundation.
 
-This program is  distributed in the hope that it will be useful,
-but WITHOUT  ANY WARRANTY; without even the  implied warranty of
-MERCHANTABILITY  or  FITNESS  FOR A PARTICULAR PURPOSE.  See the
+This program is distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY  or  FITNESS  FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 EOF
@@ -125,17 +128,75 @@ EOF
 
 # ******************************************************************************************** #
 #                                                                                              #
-#                              Function to insert the debug code.                              #
+#                                       Some variables.                                        #
 #                                                                                              #
 # ******************************************************************************************** #
 
 FiLe=$2 
+setxcode='set -x  #_S_E_T_X_#'
+ps4code='PS4='\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'\''  #_P_S_4_#'
+stepcode='trap '\''(read -p "[$BASH_SOURCE:$LINENO] $BASH_COMMAND? ")'\'' DEBUG  #_S_T_E_P_#'
 
-InsertDebug() {
-  local DebugCode LineNumber
-  LineNumber=$1 
-  DebugCode=('set -x' PS4=''\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'''\') 
-  printf '%s\n' "$LineNumber" "${DebugCode[@]}" . w q | ed -s "$FiLe"
+# ******************************************************************************************** #
+#                                                                                              #
+#                              Function to insert the debug code.                              #
+#                                                                                              #
+# ******************************************************************************************** #
+
+InsertX() {
+  local SetxCode LineNumber
+  LineNumber=$1
+
+  SetxCode=(
+    "$ps4code"
+    "$setxcode"
+  ) 
+
+  printf '%s\n' H "$LineNumber" "${SetxCode[@]}" . w q | ed -s "$FiLe"
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                    Function to undo/remove the debug `set -x' `PS4' code.                    #
+#                                                                                              #
+# ******************************************************************************************** #
+
+UndoInsertX() { 
+  printf '%s\n' H 'g/^set -x.*#_S_E_T_X_#$/d' w q | ed -s "$FiLe"
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                           Function to undo/remove the `PS4' code.                            #
+#                                                                                              #
+# ******************************************************************************************** #
+
+UndoInsertPs4() {
+  printf '%s\n' H 'g/^PS4=.*#_P_S_4_#$/d' w q | ed -s "$FiLe"
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                            Function to add/insert `step-up' code.                            #
+#                                                                                              #
+# ******************************************************************************************** #
+
+InsertStep() {
+  local LineNumber
+  LineNumber=$1
+
+  printf '%s\n' H "$LineNumber" "$stepcode" . w q | ed -s "$FiLe"
+
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                            Function to undo/remove the `step-up'.                            #
+#                                                                                              #
+# ******************************************************************************************** #
+
+UndoInsertStep() {
+  printf '%s\n' H 'g/^trap.\+read.\+DEBUG.\+#_S_T_E_P_#$/d' w q | ed -s "$FiLe"
 }
 
 # ******************************************************************************************** #
@@ -158,21 +219,6 @@ TestFile() {
   TotalLines=$(ed -s "$FiLe" <<< $'$=') 
   
   { read -r first; read -r second ; } < "$FiLe"
-  
-  
-  NotShell() {
-    die "$File does not appear to be a shell script: [$first]" 1
-  }
-
-  [[ ${first:0:2} = '#!' ]] || NotShell 
-  
-  if [[ ${first#*+( )} = -* ]]; then 
-    [[ ${first%+( )*} != *@(bash|ash|sh|ksh|zsh) ]] && NotShell 
-  fi
-  
-  if [[ ${first#*+( )} != -* ]]; then 
-    [[ ${first#*+( )} = *@(bash|ash|sh|ksh|zsh) ]] || NotShell 
-  fi
 }
 
 # ******************************************************************************************** #
@@ -184,40 +230,46 @@ TestFile() {
 while (($#)); do
   case $1 in
     -a|--about)
-           (( $# > 1 )) && die "Invalid option!, try: \`--help'" 1
-           About
-           exit
-           ;;
+        (( $# > 1 )) && die "Invalid option!, try: \`--help'" 1
+        About
+        exit
+        ;;
     -h|-\?|--help)
-           (( $# > 1 )) && die "Invalid option!, try: \`--help'" 1
-           ShowHelp
-           exit
-           ;;
-    -i|--insert)  
+        (( $# > 1 )) && die "Invalid option!, try: \`--help'" 1
+        ShowHelp
+        exit
+        ;;
+    -s|--step)
         [[ ! "$FiLe" ]] && die "No script is given!, try: \`--help'" 1
         TestFile 
-        
-        [[ $second = 'set -x' ]] && die "$File is already in debug mode!" 1 
-        
+        grep -Fq "$stepcode" "$FiLe" && die "$FiLe is already in \`step mode'!" 
         if (( TotalLines == 1 )); then 
-          InsertDebug '$a' && die "Successfully added debug after the shebang of $File" 0
+          InsertStep '$a' && die "Successfully added \`step code' after the shebang of $File" 0
         else 
-          InsertDebug '2i' && die "Successfully added debug after the shebang of $File" 0 
+          InsertStep '2i' && die "Successfully added \`step code' after the shebang of $File" 0
         fi
         ;;
-    -d|--delete) 
+    -x|--xtrace)
         [[ ! "$FiLe" ]] && die "No script is given!, try: \`--help'" 1
-        TestFile 
-        if [[ $second = 'set -x' ]]; then 
-          if printf '%s\n' '/^set -x/;+1d' w q | ed -s "$FiLe"; then 
-            die "Removed 'debug' after the shebang of $File" 0
-          fi
-        else 
-          die "$File is not in debug mode, nothing to remove!" 1
+        TestFile
+        grep -Fq "$ps4code" "$FiLe" && die "$File is already in \`debug mode'!" 1 
+        if (( TotalLines == 1 )); then
+          InsertX '$a' && die "Successfully added debug after the shebang of $File" 0
+        else
+          InsertX '2i' && die "Successfully added debug after the shebang of $File" 0
         fi
         ;;
-       *) ShowHelp >&2
-          exit 1
+    -u|--undo)
+        [[ ! "$FiLe" ]] && die "No script is given!, try: \`--help'" 1
+        TestFile
+        grep -Fq "$stepcode" "$FiLe" && UndoInsertStep 
+        grep -Fq "$setxcode" "$FiLe" && UndoInsertX    
+        grep -Fq "$ps4code" "$FiLe" && UndoInsertPs4   
+        
+        die "If there were \`debug' codes that was added from $FiLe, it has been removed." 0 
+        ;;
+     *) ShowHelp >&2
+        exit 1
         ;; 
   esac
 done
