@@ -22,24 +22,25 @@ setx [OPTION]... [FILE]
 ```
   -h    Show this help.
   -a    Show a brief info about setx.
-  -b    Insert \`set -x' or with a \`PS4' at a specific line, requires numeric argument
-  -e    Insert \`set +x' in a specific line, requires a numeric argument.
-  -u    Remove all the \`debug' code, requires a file as an argument.
-  -x    Add \`set -x' code to the second line by default, requires a file as an argument.
-  -X    Add \`set -x' and a \`PS4' code at the second line. by default, requires a file 
+  -b    Insert `set -x' or with a `PS4' at a specific line, requires numeric argument
+  -e    Insert `set +x' in a specific line, requires a numeric argument.
+  -u    Remove all the `debug' code, requires a file as an argument.
+  -x    Add `set -x' code to the second line by default, requires a file as an argument.
+  -X    Add `set -x' and a `PS4' code at the second line. by default, requires a file 
         as an argument.
-  -p    Print all the \`debug' codes from file.
+  -p    Print all the `debug' codes from file.
   -s    Make the execution of the script line by line, defaults to the second line.
         Requires a file as an argument.
+```
 
 ## Examples:
 ```
-setx -x FILE              Insert \`set -x' at the second line of FILE.
-setx -x FILE -b 5         Insert \`set -x' at the fifth line of FILE.
-setx -x FILE -b 5 -e 10   Insert \`set -x' at the fifth line and \`set +x' at the 10th.
-setx -X FILE              Insert \`set -x' and a \`PS4' at the second line of FILE.
-setx -X FILE -b 5         Insert \`set -x' and a \`PS4' at the fifth line of FILE.
-setx -X FILE -b 5 -e 10   Insert \`set -x' and a \`PS4' at the fifth line and \`set +x' 
+setx -x FILE              Insert `set -x' at the second line of FILE.
+setx -x FILE -b 5         Insert `set -x' at the fifth line of FILE.
+setx -x FILE -b 5 -e 10   Insert `set -x' at the fifth line and `set +x' at the 10th.
+setx -X FILE              Insert `set -x' and a `PS4' at the second line of FILE.
+setx -X FILE -b 5         Insert `set -x' and a `PS4' at the fifth line of FILE.
+setx -X FILE -b 5 -e 10   Insert `set -x' and a `PS4' at the fifth line and `set +x' 
                           at the 10th.
 setx -s FILE              Insert a trap at the second line of FILE.
 setx -s FILE -b 5         Insert a trap at the fifth line of FILE.
@@ -49,7 +50,7 @@ setx -u FILE              Remove all the debug code in FILE.
 ```
 
 ## TODO:
-Add option to show carriage returns, trailing white spaces and option to delet it too.
+Add option to show carriage returns, trailing white spaces and option to delete it too.
 Bring back long options! (maybe :))
 
 
