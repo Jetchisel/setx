@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 shopt -s extglob
 
@@ -6,12 +6,12 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION]... [FILE]                                                   #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Tue Jun 28 12:51:49 PHT 2016 / Tue Jun 28 04:51:49 UTC 2016               #
+#: Last Edit       : Sun Jul  3 22:24:11 PHT 2016 / Sun Jul  3 14:24:11 UTC 2016               #
 #: License         : Apache-2.0                                                                #
-#: Version         : 2.0.0                                                                     #
+#: Version         : 3.0.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
-#: Description     : Insert/Add `Debug codes' in a file/script.                                #
-#: Options         : -[abehpsuxX]                                                              #
+#: Description     : Insert/remove `Debug codes' in a file/script plus more.                   #
+#: Options         : -[achptrxX]                                                               #
 #: Home Page       : https://github.com/Jetchisel/setx                                         #
 #: ExtComm         : cat,ed,file,grep                                                          #
 # ============================================================================================ #
@@ -48,7 +48,7 @@ die() {
 # ******************************************************************************************** #
 
 Missing=()
-ExtComm=(ed file)
+ExtComm=(cat ed file grep)
 MissingMessage="is either not installed or it is not in your PATH!"
 ExitMessage="Please install the following: "
 
@@ -69,46 +69,49 @@ done
 
 ShowHelp() {
    cat <<EOF
+
 Usage: ${BASH_SOURCE##*/} [OPTION]... [FILE]
 
 Options:
-  -h    Show this help.
-  -a    Show a brief info about ${BASH_SOURCE##*/}.
-  -b    Insert \`set -x' or with a \`PS4' at a specific line, requires numeric argument
-  -e    Insert \`set +x' in a specific line, requires a numeric argument.
-  -u    Remove all the \`debug' code, requires a file as an argument.
-  -x    Add \`set -x' code to the second line by default, requires a file as an argument.
-  -X    Add \`set -x' and a \`PS4' code at the second line. by default, requires a file
-        as an argument.
-  -p    Print all the \`debug' codes from file.
-  -s    Make the execution of the script line by line, defaults to the second line.
-        Requires a file as an argument.
+  -h  --help     Show this help.
+  -a, --about    Show a brief info about ${BASH_SOURCE##*/}.
+  -c, --comment  Add a # in front of a line.
+  -r, --remove   Remove all the [keyword] code.
+  -x, --xtrace   Add \`set -x' code to the second line by default.
+  -X, --Xtrace   Add \`set -x' and a \`PS4' code at the second line. by default.
+  -p, --print    Print [keyword] code.
+  -t, --trap     Make the execution of the script line by line, defaults to the second line.
 
 Examples:
 
+${BASH_SOURCE##*/} -c FILE              Add a # in front of all lines.
+${BASH_SOURCE##*/} -c 1 FILE            Add a # in front of the first line.
+${BASH_SOURCE##*/} -c 10,20 FILE        Add a # in front of lines 10 to 20.
 ${BASH_SOURCE##*/} -x FILE              Insert \`set -x' at the second line of FILE.
-${BASH_SOURCE##*/} -x FILE -b 5         Insert \`set -x' at the fifth line of FILE.
-${BASH_SOURCE##*/} -x FILE -b 5 -e 10   Insert \`set -x' at the fifth line and \`set +x' at the 10th.
+${BASH_SOURCE##*/} -x 5 FILE            Insert \`set -x' at the fifth line of FILE.
+${BASH_SOURCE##*/} -x 5,10 FILE         Insert \`set -x' at the fifth line and \`set +x' at the 10th.
+${BASH_SOURCE##*/} -x ,10 FILE          Insert \`set +x' at the 10th line of file.
 ${BASH_SOURCE##*/} -X FILE              Insert \`set -x' and a \`PS4' at the second line of FILE.
-${BASH_SOURCE##*/} -X FILE -b 5         Insert \`set -x' and a \`PS4' at the fifth line of FILE.
-${BASH_SOURCE##*/} -X FILE -b 5 -e 10   Insert \`set -x' and a \`PS4' at the fifth line and \`set +x'
-                                        at the 10th.
-${BASH_SOURCE##*/} -s FILE              Insert a trap at the second line of FILE.
-${BASH_SOURCE##*/} -s FILE -b 5         Insert a trap at the fifth line of FILE.
-${BASH_SOURCE##*/} -p FILE              Print the debug codes if found in FILE.
-${BASH_SOURCE##*/} -u FILE              Remove all the debug code in FILE.
+${BASH_SOURCE##*/} -X 5 FILE            Insert \`set -x' and a \`PS4' at the fifth line of FILE.
+${BASH_SOURCE##*/} -X 5,10 FILE         Insert \`set -x' and a \`PS4' at the fifth line and \`set +x' at the 10th.
+${BASH_SOURCE##*/} -t FILE              Insert a trap at the second line of FILE.
+${BASH_SOURCE##*/} -t 5 FILE            Insert a trap at the fifth line of FILE.
+${BASH_SOURCE##*/} -p [keyword] FILE    Print the [keyword] code if found in FILE.
+${BASH_SOURCE##*/} -r [keyword] FILE    Remove all the [keyword] code if found in FILE.
+
+Keywords:
+
+  debug    All the debug codes \`set -x', \`set +x', and the \`trap'.
+  comment  All the lines that has been commented by adding a # in front.
+  tspace   All the lines that has trailing white space.
+
+
+Caveat:
+  Inserting any code inside the case statement for example will surely
+  break its syntax and will add more bugs in the script in question.
+
 EOF
 }
-
-# ******************************************************************************************** #
-#                                                                                              #
-#                     Show the help/usage if no option/arguments is given.                     #
-#                                                                                              #
-# ******************************************************************************************** #
-
-((!$#)) && die "$(ShowHelp)" 1
-
-[[ $1 = '-' ]] && die "$(ShowHelp)" 1
 
 # ******************************************************************************************** #
 #                                                                                              #
@@ -121,10 +124,11 @@ About() {
 
                            setx
 
-A bash  shell  script  that  inserts \`set -x' and a \`PS4' debug
-code or a trap to make the script execute line by line by using
-the  return  key.  Shell  script is  more verbose when the code
-is  added in the script in question.
+A bash  shell script that inserts \`set [+-]x'  and a \`PS4' debug
+code or a trap to make the script  execute line by  line by  using
+the  return  key.  Shell  script is  more  verbose  when  the code
+is added in the script in question. It is quite handy when writing
+and testing a shell script.
 
 Copyright [2016] [Jason V. Ferrer] '<jetchisel@opensuse.org>'
 
@@ -148,135 +152,243 @@ EOF
 #                                                                                              #
 # ******************************************************************************************** #
 
-end=
-help=
-about=
-begin=
-xfile=
-Xfile=
-undofile=
-stepfile=
-printfile=
 setxcode='set -x #_S_E_T_X_#'
+commentcode="#(${BASH_SOURCE##*/})#"
 endsetxcode='set +x #_E_N_D_S_E_T_X_#'
 ps4code='PS4='\''+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:'\'' #_P_S_4_#'
-stepcode='trap '\''(read -p "[$BASH_SOURCE:$LINENO] $BASH_COMMAND? ")'\'' DEBUG #_T_R_A_P_#'
+trapcode='trap '\''(read -p "[$BASH_SOURCE:$LINENO] $BASH_COMMAND? ")'\'' DEBUG #_T_R_A_P_#'
 
 # ******************************************************************************************** #
 #                                                                                              #
-#                Loop through the command line options/arguments using getopts.                #
+#               The empty arrays for the two arguments required in each options.               #
 #                                                                                              #
 # ******************************************************************************************** #
 
-while getopts :b:e:p:s:u:x:X:ah opt; do
-  case $opt in
-    a) about=1
+comment=() trap=() remove=() print=() xtrace=() Xtrace=()
+
+# ******************************************************************************************** #
+#                                                                                              #
+#           Function to test if both short - and long -- options are given and exit.           #
+#                                                                                              #
+# ******************************************************************************************** #
+
+ConflictArg() {
+  (($# >= 2)) && die "conflicting options specified \`$*'" 1
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#               Loop through the command line arguments/options and process it.                #
+#                                                                                              #
+# ******************************************************************************************** #
+
+while (($#)); do
+  while [[ $1 = -?* ]]; do
+    case $1 in
+      -a|--about)
+          die "$(About)"
+        ;;
+      -c|--comment)
+         commentopts+=("$1") && ConflictArg "${commentopts[@]}"
+         comment=("${@:2:2}")
+         ((!${#comment[@]})) && die "$1 requires an argument!" 1
+         shift
+         ;;
+      -h|--help)
+          die "$(ShowHelp)"
+         ;;
+      -p|--print)
+         printopts+=("$1") && ConflictArg "${printopts[@]}"
+         print=("${@:2:2}")
+         ((!${#print[@]})) && die "$1 requires an argument!" 1
+         shift
+         ;;
+      -t|--trap)
+         trapopts+=("$1") && ConflictArg "${trapopts[@]}"
+         trap=("${@:2:2}")
+         ((!${#trap[@]})) && die "$1 requires an argument!" 1
+         shift
+         ;;
+      -r|--remove)
+         removeopts+=("$1") && ConflictArg "${removeopts[@]}"
+         remove=("${@:2:2}")
+         ((!${#remove[@]})) && die "$1 requires an argument!" 1
+         shift
+        ;;
+      -x|--xtrace)
+         xtraceopts+=("$1") && ConflictArg "${xtraceopts[@]}"
+         xtrace=("${@:2:2}")
+         ((!${#xtrace[@]})) && die "$1 requires an argument!" 1
+         shift
+        ;;
+      -X|--Xtrace)
+         Xtraceopts+=("$1") && ConflictArg "${Xtraceopts[@]}"
+         Xtrace=("${@:2:2}")
+         ((!${#Xtrace[@]})) && die "$1 requires an argument!" 1
+         shift
+        ;;
+       *)
+         die "Invalid option \`$*'" 1
        ;;
-    b) begin=$OPTARG
-       ;;
-    e) end=$OPTARG
-       ;;
-    h) help=1
-       ;;
-    p) printfile=$OPTARG
-       ;;
-    s) stepfile=$OPTARG
-       ;;
-    u) undofile=$OPTARG
-       ;;
-    x) xfile=$OPTARG
-       ;;
-    X) Xfile=$OPTARG
-       ;;
-    :) die "Option -$OPTARG requires an argument." 1
-       ;;
-    *) die "Unknown options -$OPTARG" 1
-       ;;
-  esac
+    esac
+  done
+  shift
 done
-shift $((OPTIND-1))
 
 # ******************************************************************************************** #
 #                                                                                              #
-#    Test for a mix up of -[ah] and -a with -[behpsuxX] or -h with -[behpsuxX] or run -[ah].   #
+#                        Test if [-x|--xtrace] is given and process it.                        #
 #                                                                                              #
 # ******************************************************************************************** #
 
-if [[  "$about" && "$help" ]]; then
-  die "conflicting options specified!" 1
-fi
-if [[ 1 = @("$about"|"$help") ]]; then
-  [[ $begin$end$undofile$printfile$stepfile$xfile$Xfile ]] && die "conflicting options specified!" 1
-fi
 
-[[ 1 = "$about" ]] && die "$(About)" 0
-[[ 1 = "$help" ]] && die "$(ShowHelp)" 0
-
-# ******************************************************************************************** #
-#                                                                                              #
-#    Test if no input matching the non optional options -[xpsuxX] then exit with an error.     #
-#                                                                                              #
-# ******************************************************************************************** #
-
-[[ $xfile$undofile$stepfile$Xfile$printfile ]] || die "-[xpsuX] is not specified." 2
-
-# ******************************************************************************************** #
-#                                                                                              #
-#            Test for invalid mixture of options/arguments and exit with an error.             #
-#                                                                                              #
-# ******************************************************************************************** #
-
-[[ $stepfile && $undofile ]] && die "conflicting options specified!" 1
-if [[ $undofile ]]; then
- [[ $begin || $end ]] && die "conflicting options specified!" 1
-fi
-if [[ $stepfile && $end ]]; then
-  die "conflicting options specified!" 1
+if ((${#xtrace[@]} == 1)); then
+  xtraceOneLine=1
+  xtraceFiLe=${xtrace[0]}
+elif ((${#xtrace[@]} == 2)); then
+  [[ ${xtrace[0]} = *[0-9]* ]] || die "Invalid line number ${xtrace[0]}" 1
+  if [[ ${xtrace[0]} = +([0-9]) ]]; then
+    xtraceOneLine=${xtrace[0]}
+  elif [[ ${xtrace[0]} = +([0-9]), ]]; then
+    xtraceOneLineStart="${xtrace[0]%,*}"
+  elif [[ ${xtrace[0]} = ,+([0-9]) ]]; then
+    xtraceOneLineEnd="${xtrace[0]#*,}"
+  elif [[ ${xtrace[0]} = +([0-9]),+([0-9]) ]]; then
+    xtraceTwoLine=${xtrace[0]}
+    xtraceTwoLineStart=${xtrace[0]%,*}
+    xtraceTwoLineEnd=${xtrace[0]#*,}
+  fi
+  xtraceFiLe=${xtrace[1]}
 fi
 
-# ******************************************************************************************** #
-#                                                                                              #
-#         Test for the value of `$begin' and `$end' if not numeric exit with an error.         #
-#                                                                                              #
-# ******************************************************************************************** #
-
-if [[ $begin ]]; then
-  [[ $begin = +([0-9]) ]] || die "$begin is not numeric!" 1
-fi
-if [[ $end ]]; then
-  [[  $end = +([0-9]) ]] || die "$end is not numberic!" 1
-fi
-
-# ******************************************************************************************** #
-#                                                                                              #
-#  If the value of `$end' is greater than `$begin' exit with an error. (set -x before set +x)  #
-#                                                                                              #
-# ******************************************************************************************** #
-
-if ((begin)); then
-  if ((end)); then
-    ((begin>=end)) && die "${endsetxcode%+( )*} must be placed after ${setxcode%+( )*}!" 1
+if [[ $xtraceTwoLineEnd && $xtraceTwoLineStart ]]; then
+  if [[ $xtraceTwoLineStart -ge $xtraceTwoLineEnd ]]; then
+    die "${setxcode%+( )*} before ${endsetxcode%+( )*}" 1
   fi
 fi
 
 # ******************************************************************************************** #
 #                                                                                              #
-#  Test which variable file is not empty, assign it to the variable FiLe to be process later.  #
+#                        Test if [-X|--Xtrace] is given and process it.                        #
 #                                                                                              #
 # ******************************************************************************************** #
 
+if ((${#Xtrace[@]} == 1)); then
+  XtraceOneLine=1
+  XtraceFiLe=${Xtrace[0]}
+elif ((${#Xtrace[@]} == 2)); then
+  [[ ${Xtrace[0]} = *[0-9]* ]] || die "Invalid line number ${Xtrace[0]}" 1
+  if [[ ${Xtrace[0]} = +([0-9]) ]]; then
+    XtraceOneLine=${Xtrace[0]}
+  elif [[ ${Xtrace[0]} = +([0-9]), ]]; then
+    XtraceOneLineStart="${Xtrace[0]%,*}"
+  elif [[ ${Xtrace[0]} = ,+([0-9]) ]]; then
+    XtraceOneLineEnd="${Xtrace[0]#*,}"
+  elif [[ ${Xtrace[0]} = +([0-9]),+([0-9]) ]]; then
+    XtraceTwoLine=${Xtrace[0]}
+    XtraceTwoLineStart=${Xtrace[0]%,*}
+    XtraceTwoLineEnd=${Xtrace[0]#*,}
+  fi
+  XtraceFiLe=${Xtrace[1]}
+fi
 
-for usefile in "$xfile" "$Xfile" "$undofile" "$stepfile" "$printfile"; do
-  [[ $usefile ]] && FiLe=$usefile
+if [[ $XtraceTwoLineEnd && $XtraceTwoLineStart ]]; then
+  if [[ $XtraceTwoLineStart -ge $XtraceTwoLineEnd ]]; then
+    die "${setxcode%+( )*} before ${endsetxcode%+( )*}" 1
+  fi
+fi
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                         Test if [-t|--trap] is given and process it.                         #
+#                                                                                              #
+# ******************************************************************************************** #
+
+if ((${#trap[@]} == 1)); then
+  trapOneLine=1
+  trapFiLe=${trap[0]}
+elif ((${#trap[@]} == 2)); then
+  [[ ${trap[0]} = +([0-9]) ]] || die "Invalid line number ${trap[0]}" 1
+  [[ ${trap[0]} = +([0-9]) ]] && trapOneLine=${trap[0]}
+  trapFiLe=${trap[1]}
+fi
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                       Test if [-c|--comment] is given and process it.                        #
+#                                                                                              #
+# ******************************************************************************************** #
+
+if ((${#comment[@]} == 1)); then
+  commentAllLines=1
+  commentFiLe=${comment[0]}
+elif ((${#comment[@]} == 2)); then
+  [[ ${comment[0]} = *[0-9]* ]] || die "Invalid line number ${comment[0]}" 1
+  if [[ ${comment[0]} = +([0-9]) ]]; then
+    commentOneLine=${comment[0]}
+  elif [[ ${comment[0]} = +([0-9]), ]]; then
+    commentOneLineStart="${comment[0]%,*}"
+  elif [[ ${comment[0]} = ,+([0-9]) ]]; then
+    commentOneLineEnd="${comment[0]#*,}"
+  elif [[ ${comment[0]} = +([0-9]),+([0-9]) ]]; then
+    commentTwoLine=${comment[0]}
+    commentTwoLineStart=${comment[0]%,*}
+    commentTwoLineEnd=${comment[0]#*,}
+  fi
+  commentFiLe=${comment[1]}
+fi
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                        Test if [-p|--print] is given and process it.                         #
+#                                                                                              #
+# ******************************************************************************************** #
+
+if ((${#print[@]})); then
+  if ((${#print[@]} < 2)); then
+    die "[-p|--print] Needs two argument [keyword] and [file]" 1
+  elif ((${#print[@]} == 2)); then
+    [[ ${print[0]} != @(tspace|comment|debug) ]] && die "Invalid argument ${print[0]}" 1
+    printArg=${print[0]}
+    printFiLe=${print[1]}
+  fi
+fi
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                       Test if [-r|--remove] is given and process it.                         #
+#                                                                                              #
+# ******************************************************************************************** #
+
+if ((${#remove[@]})); then
+  if ((${#remove[@]} < 2)); then
+    die "[-r|--remove] Needs two argument [keyword] and [file]" 1
+  elif ((${#remove[@]} == 2)); then
+    [[ ${remove[0]} != @(tspace|comment|debug) ]] && die "Invalid argument ${remove[0]}" 1
+    RemoveArg=${remove[0]}
+    removeFiLe=${remove[1]}
+  fi
+fi
+
+# ******************************************************************************************** #
+#                                                                                              #
+#           Test which file is going to be used and assign it to the FiLe variable.            #
+#                                                                                              #
+# ******************************************************************************************** #
+
+for files in "$commentFiLe" "$trapFiLe" "$printFiLe" "$xtraceFiLe" "$XtraceFiLe" "$removeFiLe"; do
+  [[ $files ]] && FiLe=$files
+  AllFiLes+=("$files")
 done
+[[ ! ${AllFiLes[@]} ]] && die "$(ShowHelp)" 1
 
 # ******************************************************************************************** #
 #                                                                                              #
-#   Function to do some various if not extensive testing about the file type of the script.    #
+#         Do some various if not extensive testing about the file type of the script.          #
 #                                                                                              #
 # ******************************************************************************************** #
 
-[[ $FiLe = -* ]] && die "Try ${BASH_SOURCE##*/} ... ./$FiLe to edit $FiLe" 1
+[[ $FiLe = -?* ]] && die "Try ${BASH_SOURCE##*/} ... ./$FiLe to edit $FiLe" 1
 FileType=$(file --mime-type -b -- "$FiLe")
 File=\`"$FiLe"\'
 [[ $FileType = "cannot open $File (No such file or directory)" ]] && die "$FileType" 1
@@ -285,6 +397,7 @@ File=\`"$FiLe"\'
 
 [[ -w $FiLe ]] || die "cannot write to $File (Permission denied)" 1
 [[ -r $FiLe ]] || die "cannot read $File (Permissiondenied)" 1
+
 
 # ******************************************************************************************** #
 #                                                                                              #
@@ -298,150 +411,308 @@ fi
 
 # ******************************************************************************************** #
 #                                                                                              #
-#  Print colored `debug codes' with a leading number if found, otherwise exit with an error.   #
-#                                                                                              #
-# ******************************************************************************************** #
-
-if [[ $printfile ]]; then
-  if ! grep --color=auto -Fnxwe "$setxcode" -Fnxwe "$stepcode" -Fnwxe "$ps4code" -Fnwxe "$endsetxcode" "$FiLe"; then
-    die "$FiLe does not contain any debug code!"
-  fi
-fi
-
-# ******************************************************************************************** #
-#                                                                                              #
-#     Function to add ONLY `set -x' at the second line or at a specific line if specified.     #
+# Function to add `set -x' and `set +x' at the second line or at a specific line if specified. #
 #                                                                                              #
 # ******************************************************************************************** #
 
 Insertx() {
-  local LineNumber=$begin Xcode xcode
+  local Start End Xcode xcode StartLine EndLine
 
-
-  if Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
-    die "$FiLe has set -x code at line ${Xcode%%:*}" 1
+  [[ $xtraceOneLine ]] && Start=$xtraceOneLine StartLine=$Start
+  [[ $xtraceOneLineStart ]] && Start=$xtraceOneLineStart StartLine=$Start
+  [[ $xtraceOneLineEnd ]] && End=$xtraceOneLineEnd EndLine=$End
+  if [[ $xtraceTwoLine ]]; then
+    Start=$xtraceTwoLineStart StartLine=$Start
+    End=$xtraceTwoLineEnd EndLine=$End
   fi
-  if ((LineNumber)); then
-    if xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
-      if (( LineNumber >= ${xcode%%:*} )); then
+  [[ $StartLine -gt $TotalLines ]] && die "$StartLine is more than $TotalLines lines of $FiLe" 1
+  [[ $EndLine -gt $TotalLines ]] && die "$EndLine is more than $TotalLines lines of $FiLe" 1
+
+  if [[ $StartLine ]]; then
+    if Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
+      die "$FiLe has ${setxcode%+( )*} code at line ${Xcode%%:*}" 1
+    elif xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
+      if [[ $StartLine -le ${xcode%%:*} ]]; then
         die "${endsetxcode%+( )*} is at line ${xcode%:*} which should come after ${setxcode%+( )*}"
       fi
     fi
   fi
 
-  if ((LineNumber)); then
-    if ((LineNumber > TotalLines)); then
-      die "$LineNumber is more than $TotalLines line(s) of $FiLe"
+  if [[ $EndLine ]]; then
+    if xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
+      die "$FiLe has ${endsetxcode%+( )*} code at line ${xcode%%:*}" 1
+    elif Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
+      if [[ $EndLine -le ${Xcode%%:*} ]]; then
+        die "${setxcode%+( )*} before ${endsetxcode%+( )*}"
+      fi
     fi
-    if ((TotalLines == 1 || LineNumber == 1)); then
-      printf '%s\n' H '$a' "$setxcode" . w q | ed -s "$FiLe"
-    elif (( LineNumber > 1 )); then
-      printf '%s\n' H "${LineNumber}i" "$setxcode" . w q | ed -s "$FiLe"
-    fi
-  else
-    if ((TotalLines == 1)); then
-      printf '%s\n' H '$a' "$setxcode" . w q | ed -s "$FiLe"
+  fi
+
+  if [[ $StartLine && $EndLine ]]; then
+    if [[ $StartLine -eq 1 ]]; then
+      printf '%s\n' H "2i" "$setxcode" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${setxcode%+( )*} at the second line and ${endsetxcode%+( )*} at line $EndLine of $FiLe."
     else
+      printf '%s\n' H "${StartLine}i" "$setxcode" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${setxcode%+( )*} at line $StartLine and ${endsetxcode%+( )*} at line $EndLine of $FiLe."
+    fi
+  elif [[ $StartLine ]]; then
+    if [[ $TotalLines -eq 1 && $StartLine -eq 1 ]]; then
+      printf '%s\n' H '$a' "$setxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${setxcode%+( )*} at the last line of $FiLe."
+    elif [[ $TotalLines -gt 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H "2i" "$setxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${setxcode%+( )*} at the second line of $FiLe."
+    elif [[ $TotalLines -ge 1 ]]; then
+      printf '%s\n' H "${StartLine}i" "$setxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${setxcode%+( )*} at line $StartLine of $FiLe."
+    fi
+  elif [[ $EndLine ]]; then
+    if [[ $TotalLines -eq 1 && $EndLine -eq 1 ]]; then
+      printf '%s\n' H '$a' "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${endsetxcode%+( )*} at the last line of $FiLe."
+    elif [[ $TotalLines -gt 1 && $EndLine -eq 1 ]]; then
+      printf '%s\n' H "2i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${endsetxcode%+( )*} at the second line of $FiLe."
+    else
+      printf '%s\n' H "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${endsetxcode%+( )*} at line $EndLine of $FiLe."
     fi
   fi
 }
 
 # ******************************************************************************************** #
 #                                                                                              #
-# Function to add `set -x' and a `PS4' code at the second line or at a specific line if given. #
+#    Function to add `set -x', `PS4' and `set +x' at the second line or at a specific line.    #
 #                                                                                              #
 # ******************************************************************************************** #
 
 InsertX() {
-  local SetxCode LineNumber=$begin Xcode xcode
+  local SetxCode Start End Xcode xcode StartLine EndLine
   SetxCode=("$ps4code" "$setxcode")
 
-  if Xcode=$(grep -Fnwxe "$setxcode" "$FiLe"); then
-    if xcode=$(grep -Fnwxe "$ps4code" "$FiLe"); then
-      die "$FiLe has PS4 code at line ${Xcode%%:*} and set -x code at line ${xcode%%:*}!" 1
-    else
-      die "$FiLe has \`${setxcode%+( )*}' at line ${Xcode%%:*}" 1
-    fi
+  [[ $XtraceOneLine ]] && Start=$XtraceOneLine StartLine=$Start
+  [[ $XtraceOneLineStart ]] && Start=$XtraceOneLineStart StartLine=$Start
+  [[ $XtraceOneLineEnd ]] && End=$XtraceOneLineEnd EndLine=$End
+  if [[ $XtraceTwoLine ]]; then
+    Start=$XtraceTwoLineStart StartLine=$Start
+    End=$XtraceTwoLineEnd EndLine=$End
   fi
-  if ((LineNumber)); then
-    if xcode=$(grep -Fnwxe "$endsetxcode" "$FiLe"); then
-      if (( LineNumber >= ${xcode%%:*} )); then
+  [[ $StartLine -gt $TotalLines ]] && die "$StartLine is more than $TotalLines lines of $FiLe" 1
+  [[ $EndLine -gt $TotalLines ]] && die "$EndLine is more than $TotalLines lines of $FiLe" 1
+
+  if [[ $StartLine ]]; then
+    if Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
+      die "$FiLe has ${setxcode%+( )*} code at line ${Xcode%%:*}" 1
+    elif xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
+      if [[ $StartLine -le ${xcode%%:*} ]]; then
         die "${endsetxcode%+( )*} is at line ${xcode%:*} which should come after ${setxcode%+( )*}"
       fi
     fi
   fi
-  if ((LineNumber)); then
-    if ((LineNumber > TotalLines)); then
-      die "$LineNumber is more than $TotalLines line(s) of $FiLe"
-    fi
-    if ((TotalLines == 1 || LineNumber == 1)); then
-      printf '%s\n' H '$a' "${SetxCode[@]}" . w q | ed -s "$FiLe"
-    elif (( LineNumber > 1 )); then
-      printf '%s\n' H "${LineNumber}i" "${SetxCode[@]}" . w q | ed -s "$FiLe"
-    fi
-  else
-    if ((TotalLines == 1)); then
-      printf '%s\n' H '$a' "${SetxCode[@]}" . w q | ed -s "$FiLe"
-    else
-      printf '%s\n' H "2i" "${SetxCode[@]}" . w q | ed -s "$FiLe"
-    fi
-  fi
-}
 
-# ******************************************************************************************** #
-#                                                                                              #
-#    Function to add/insert `set +x' at the second line or at a specific line if specified.    #
-#                                                                                              #
-# ******************************************************************************************** #
-
-InsertEndXcode() {
-  local LineNumber=$end Xcode xcode
-  if Xcode=$(grep -Fnwxe "$endsetxcode" "$FiLe"); then
-    die "$File has \`${endsetxcode%+( )*}' at line ${Xcode%%:*}."
-  fi
-  if ((LineNumber)); then
-    if xcode=$(grep -Fnwxe "$setxcode" "$FiLe"); then
-      if (( LineNumber <= ${xcode%%:*} )); then
-        die "${setxcode%+( )*} is in line ${xcode%:*} which should come first before ${endsetxcode%+( )*}!"
+  if [[ $EndLine ]]; then
+    if xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
+      die "$FiLe has ${endsetxcode%+( )*} code at line ${xcode%%:*}" 1
+    elif Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
+      if [[ $EndLine -le ${Xcode%%:*} ]]; then
+        die "${setxcode%+( )*} before ${endsetxcode%+( )*}"
       fi
     fi
   fi
-  if ((LineNumber)); then
-    ((LineNumber > TotalLines)) && die "$LineNumber is more than $TotalLines line(s) of $FiLe"
-    if ((TotalLines == 1 || LineNumber == 1)); then
-      printf '%s\n' H '$a' "$endsetxcode" . w q | ed -s "$FiLe"
+
+  if [[ $StartLine && $EndLine ]]; then
+    if [[ $StartLine -eq 1 ]]; then
+      printf '%s\n' H "2i" "${SetxCode[@]}" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${SetxCode[*]} at line 2 and $endsetxcode at $EndLine in $FiLe."
     else
-      printf '%s\n' H "${LineNumber}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      printf '%s\n' H "${StartLine}i" "${SetxCode[@]}" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at line $StartLine and ${endsetxcode%+( )*} at line $EndLine in $FiLe."
+    fi
+  elif [[ $StartLine ]]; then
+    if [[ $TotalLines -eq 1 && $StartLine -eq 1 ]]; then
+      printf '%s\n' H '$a' "${SetxCode[@]}" . w q | ed -s "$FiLe"
+      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at the last line of $FiLe."
+    elif [[ $TotalLines -gt 1 && $StartLine -eq 1 ]]; then
+      printf '%s\n' H "2i" "${SetxCode[@]}" . w q | ed -s "$FiLe"
+      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at the second line of $FiLe."
+    elif [[ $TotalLines -ge 1 ]]; then ##&& StartLine > 1)); then
+      printf '%s\n' H "${StartLine}i" "${SetxCode[@]}" . w q | ed -s "$FiLe"
+      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at line $StartLine $FiLe."
+    fi
+  elif [[ $EndLine ]]; then
+    if [[ $TotalLines -eq 1 && $EndLine -eq 1 ]]; then
+      printf '%s\n' H '$a' "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${endsetxcode%+( )*} at the last line of $FiLe."
+    elif [[ $TotalLines -gt 1 && $EndLine -eq 1 ]]; then
+      printf '%s\n' H "2i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${endsetxcode%+( )*} at the second line of $FiLe."
+    else
+      printf '%s\n' H "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
+      warn "Inserted ${endsetxcode%+( )*} at line $EndLine of $FiLe."
     fi
   fi
 }
 
 # ******************************************************************************************** #
 #                                                                                              #
-# Function to add/insert `step-up' code at the second line or at a specific line if specified. #
+#  Function to add/insert `trap code' at the second line or at a specific line if specified.   #
 #                                                                                              #
 # ******************************************************************************************** #
 
-InsertStep() {
-  local LineNumber=$begin Xcode
-  if Xcode=$(grep -Fnwxe "$stepcode" "$FiLe"); then
-    die "$FiLe has \`${stepcode%+( )*}' at line ${Xcode%%:*}." 1
+InsertTrap() {
+  local StartLine=$trapOneLine Xcode
+  if Xcode=$(grep -Fnwxe "$trapcode" "$FiLe"); then
+    die "$FiLe has \`${trapcode%+( )*}' at line ${Xcode%%:*}." 1
   fi
-  if ((LineNumber)); then
-    if ((LineNumber > TotalLines)); then
-     die "$LineNumber is more than $TotalLines line(s) of $FiLe"
+  if [[ $StartLine ]]; then
+    if [[ $StartLine -gt $TotalLines ]]; then
+      die "$StartLine is more than $TotalLines line(s) of $FiLe"
+    elif [[ $TotalLines -eq 1 && $StartLine -eq 1 ]]; then
+      printf '%s\n' H '$a' "$trapcode" . w q | ed -s "$FiLe"
+      warn "Inserted \`${trapcode%+( )*}' at the last line of $FiLe."
+    elif [[ $TotalLines -gt 1 && $StartLine -eq 1 ]]; then
+      printf '%s\n' H "2i" "$trapcode" . w q | ed -s "$FiLe"
+      warn "Inserted \`${trapcode%+( )*}' at the second line of $FiLe."
+    elif [[ $TotalLines -ge 1 ]]; then
+      printf '%s\n' H "${StartLine}i" "$trapcode" . w q | ed -s "$FiLe"
+      warn "Inserted \`${trapcode%+( )*}' at line $StartLine of $FiLe."
     fi
-    if ((TotalLines == 1 || LineNumber == 1)); then
-      printf '%s\n' H '$a' "$stepcode" . w q | ed -s "$FiLe"
-    elif (( LineNumber > 1 )); then
-      printf '%s\n' H "${LineNumber}i" "$stepcode" . w q | ed -s "$FiLe"
-    fi
-  else
-    if ((TotalLines == 1)); then
-      printf '%s\n' H '$a' "$stepcode" . w q | ed -s "$FiLe"
+  fi
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#             Function to comment out a line or lines by prefending a # in front.              #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Comment() {
+  [[ $commentAllLines ]] && StartEndLines=$commentAllLines
+  [[ $commentOneLine ]] && Start=$commentOneLine StartLine=$Start
+  [[ $commentOneLineStart ]] && Start=$commentOneLineStart StartLine=$Start
+  [[ $commentOneLineEnd ]] && End=$commentOneLineEnd EndLine=$End
+  if [[ $commentTwoLine ]]; then
+    Start=$commentTwoLineStart StartLine=$Start
+    End=$commentTwoLineEnd EndLine=$End
+  fi
+
+  if [[ $StartLine && $EndLine ]]; then
+    if [[ $EndLine -gt $TotalLines && $StartLine -gt $TotalLines ]]; then
+      die "$EndLine && $StartLine is more than $TotalLines lines of $FiLe"
+    elif [[ $StartLine -gt $TotalLines ]]; then
+      die "$StartLine more than $TotalLines lines of $FiLe" 1
+    elif [[ $EndLine -gt $TotalLines ]]; then
+      die "$EndLine more than $TotalLines lines of $FiLe" 1
+    elif [[ $StartLine -ge $EndLine ]]; then
+      die "Comment starts at $StartLine must be lower than where it ends at $EndLine" 1
     else
-      printf '%s\n' H "2i" "$stepcode" . w q | ed -s "$FiLe"
+      printf '%s\n' H "${StartLine},${EndLine}s/^/$commentcode/" w q | ed -s "$FiLe"
+      warn "Commented lines from $StartLine to $EndLine in $FiLe."
+    fi
+  elif [[ $StartLine ]]; then
+    [[ $StartLine -gt $TotalLines ]] && die "$StartLine is more than $TotalLines lines of $FiLe" 1
+    printf '%s\n' H "${StartLine},s/^/$commentcode/" w q | ed -s "$FiLe"
+    warn "Line $StartLine has been commented in $FiLe."
+  elif [[ $EndLine ]]; then
+    [[ $EndLine -gt $TotalLines ]] && die "$EndLine is more than $TotalLines lines of $FiLe" 1
+    printf '%s\n' H "${EndLine},s/^/$commentcode/" w q | ed -s "$FiLe"
+    warn "Line $EndLine has been commented in $FiLe."
+  elif [[ $StartEndLines ]]; then
+    printf '%s\n' H ",s/^/$commentcode/" w q | ed -s "$FiLe"
+    warn "All lines has been commented in $FiLe"
+  fi
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                 Function to print the commented lines that starts with a #.                  #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Pcomment() {
+  local IFS line i=1 commentline=()
+  while IFS= read -r line; do
+    if [[ $line = "$commentcode"* ]]; then
+      printf "%2d:%s\n" "$i" "$line"
+      commentline+=("$line")
+    fi
+    ((i++))
+  done < "$FiLe"
+
+  if ((!${#commentline[@]})); then
+    warn "No comment found in $FiLe."
+    return 1
+  fi
+  return 0
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#           Function to remove the comments in the commented lines if found in file.           #
+#                                                                                              #
+# ******************************************************************************************** #
+
+RemoveComment() {
+  if Pcomment >/dev/null; then
+    printf '%s\n' H ",s/^.*${commentcode}*//" w q | ed -s "$FiLe"
+    warn "Comments has be remove in $FiLe."
+    return 0
+  fi
+  warn "No comment found in $FiLe"
+  return 1
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                           Function to print trailing white space.                            #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Ptspace() {
+  local line IFS i=1 tspaceline=()
+  while IFS= read -u4 -r line; do
+    if [[ $line = *[[:blank:]] ]]; then
+      printf "%2d:%s*\n" "$i" "$line"
+      tspaceline+=("$line")
+    fi
+    ((i++))
+  done 4< "$FiLe"
+
+  if ((!${#tspaceline[@]})); then
+    warn "No trailing white space found in $FiLe."
+    return 1
+  fi
+  return 0
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                      Function to delete trailing white space using ed.                       #
+#                                                                                              #
+# ******************************************************************************************** #
+
+RemoveTspace() {
+  if Ptspace >/dev/null; then
+    ed -s "$FiLe" <<< $',s/[[:blank:]]*$//\nw\nq'
+    warn "Trailing white space has been remove in $FiLe"
+    return 0
+  fi
+  warn "No trailing white space found in $FiLe"
+  return 1
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                         Function to print `debug codes' in the file.                         #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Pdebug() {
+  if [[ $printFiLe ]]; then
+    if ! grep --color=auto -Fnxwe "$setxcode" -Fnxwe "$trapcode" -Fnwxe "$ps4code" -Fnwxe "$endsetxcode" "$FiLe"; then
+      warn "$FiLe does not contain any debug code!"
+      return 1
     fi
   fi
 }
@@ -452,8 +723,8 @@ InsertStep() {
 #                                                                                              #
 # ******************************************************************************************** #
 
-UndoInsertX() {
-  printf '%s\n' H 'g/^set.*-x.*#_S_E_T_X_#$/d' w q | ed -s "$FiLe"
+RemoveInsertX() {
+   printf '%s\n' H 'g/^set.*-x.*#_S_E_T_X_#$/d' w q | ed -s "$FiLe"
 }
 
 # ******************************************************************************************** #
@@ -462,8 +733,8 @@ UndoInsertX() {
 #                                                                                              #
 # ******************************************************************************************** #
 
-UndoEndXcode() {
-  printf '%s\n' 'g/^set.*+x.*#_E_N_D_S_E_T_X_#$/d' w q | ed -s "$FiLe"
+RemoveEndXcode() {
+   printf '%s\n' 'g/^set.*+x.*#_E_N_D_S_E_T_X_#$/d' w q | ed -s "$FiLe"
 }
 
 # ******************************************************************************************** #
@@ -472,8 +743,8 @@ UndoEndXcode() {
 #                                                                                              #
 # ******************************************************************************************** #
 
-UndoInsertPs4() {
-  printf '%s\n' H 'g/^PS4=.*#_P_S_4_#$/d' w q | ed -s "$FiLe"
+RemoveInsertPs4() {
+   printf '%s\n' H 'g/^PS4=.*#_P_S_4_#$/d' w q | ed -s "$FiLe"
 }
 
 # ******************************************************************************************** #
@@ -482,57 +753,9 @@ UndoInsertPs4() {
 #                                                                                              #
 # ******************************************************************************************** #
 
-UndoInsertStep() {
+RemoveInsertTrap() {
   printf '%s\n' H 'g/^trap.*read.*DEBUG.*#_T_R_A_P_#$/d' w q | ed -s "$FiLe"
 }
-
-# ******************************************************************************************** #
-#                                                                                              #
-#  If `$xfile' has a value the (-x option) we add `set -x' or both `set -x and `set +x' code.  #
-#                                                                                              #
-# ******************************************************************************************** #
-
-if [[ $xfile && $begin && $end ]]; then
-  Insertx && InsertEndXcode
-  die "Added \`${setxcode%+( )*}' at line $begin and \`${endsetxcode%+( )*}' at line $end in file $xfile."
-elif [[ $xfile && $end ]]; then
-  InsertEndXcode && die "Added \`${endsetxcode%+( )*}' at line $end in file $xfile."
-elif [[ $xfile && $begin ]]; then
-  Insertx && die "Added \`${setxcode%+( )*}' at line $begin in file $xfile"
-elif [[ $xfile ]]; then
-  Insertx && die "Added \`${setxcode%+( )*}' at the second line of $xfile"
-fi
-
-# ******************************************************************************************** #
-#                                                                                              #
-#   If `$Xfile' has a value (-X option) we add `set -x, ps4' or together with `set +x' code.   #
-#                                                                                              #
-# ******************************************************************************************** #
-
-if [[ $Xfile && $begin && $end ]]; then
-  InsertX && InsertEndXcode
-  die "Added PS4 at line $begin and \`${setxcode%+( )*}' at line $((begin+1)) and \`${endsetxcode%+( )*}' at line $end of $Xfile."
-elif [[ $Xfile && $end ]]; then
-  InsertEndXcode && die "Added \`${endsetxcode%+( )*}' at line $end in file $Xfile."
-elif [[ $Xfile && $begin ]]; then
-  InsertX && die "Added \`PS4' at line $begin and \`${setxcode%+( )*}' line $((begin+1))' in file $Xfile."
-elif [[ $Xfile ]]; then
-  InsertX && die "Added \`PS4' at the second line and \`${setxcode%+( )*}' at the third line in file $Xfile."
-fi
-
-# ******************************************************************************************** #
-#                                                                                              #
-# The `$stepfile' (-s) is given, add the debug trap at the second line or at a specified line. #
-#                                                                                              #
-# ******************************************************************************************** #
-
-if [[ $stepfile ]]; then
- if [[ $begin ]]; then
-   InsertStep && die "Added a \`trap' at line $begin of $stepfile."
- else
-   InsertStep && die "Added \`trap' at the second line of $stepfile."
- fi
-fi
 
 # ******************************************************************************************** #
 #                                                                                              #
@@ -540,15 +763,65 @@ fi
 #                                                                                              #
 # ******************************************************************************************** #
 
-if [[ $undofile ]]; then
-  for i in "$setxcode" "$ps4code" "$stepcode" "$endsetxcode"; do
-    val=$(grep -Fnwxe "$i" "$undofile") && status+=("$val")
-    [[ ${val#*:} = "$stepcode" ]] && UndoInsertStep && warn "$stepcode deleted in file $FiLe at line ${val%%:*}"
-    [[ ${val#*:} = "$setxcode" ]] && UndoInsertX && warn "$setxcode deleted in file $FiLe at line ${val%%:*}"
-    [[ ${val#*:} = "$ps4code" ]] && UndoInsertPs4 && warn "$ps4code deleted in file $FiLe at line ${val%%:*}"
-    [[ ${val#*:} = "$endsetxcode" ]] && UndoEndXcode && warn "$endsetxcode deleted in file $FiLe at line ${val%%:*}"
+RemoveDebug()  {
+  for i in "$setxcode" "$ps4code" "$trapcode" "$endsetxcode"; do
+    val=$(grep -Fnwxe "$i" "$removeFiLe") && status+=("$val")
+    [[ ${val#*:} = "$trapcode" ]] && RemoveInsertTrap && warn "${trapcode%+( )*} deleted in file $FiLe at line ${val%%:*}"
+    [[ ${val#*:} = "$setxcode" ]] && RemoveInsertX && warn "${setxcode%+( )*} deleted in file $FiLe at line ${val%%:*}"
+    [[ ${val#*:} = "$ps4code" ]] && RemoveInsertPs4 && warn "${ps4code%+( )*} deleted in file $FiLe at line ${val%%:*}"
+    [[ ${val#*:} = "$endsetxcode" ]] && RemoveEndXcode && warn "${endsetxcode%+( )*} deleted in file $FiLe at line ${val%%:*}"
   done
-  ((!${#status[@]})) && die "$undofile does not contain any debug code!" 1
+  ((!${#status[@]})) && die "$removeFiLe does not contain any debug code!" 1
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                  Function to parse the arguments if [-r|--remove] is given.                  #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Remove() {
+  case $RemoveArg in
+    debug) RemoveDebug;;
+    comment) RemoveComment;;
+    tspace) RemoveTspace;;
+    *) die "Invalid argument \`$RemoveArg'!";;
+  esac
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                   Function to parse the argument if [-p|--print] is given.                   #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Print() {
+  case "$printArg" in
+    tspace) Ptspace ;;
+    comment) Pcomment ;;
+    debug) Pdebug ;;
+    *) die "Invalid argument \`$printArg'!";;
+  esac
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                   Test which file is given and execute the right commands.                   #
+#                                                                                              #
+# ******************************************************************************************** #
+
+if [[ $XtraceFiLe ]]; then
+  InsertX
+elif [[ $xtraceFiLe ]]; then
+  Insertx
+elif [[ $commentFiLe ]]; then
+  Comment
+elif [[ $trapFiLe ]]; then
+ InsertTrap
+elif [[ $printFiLe ]]; then
+  Print
+elif [[ $removeFiLe ]]; then
+  Remove
 fi
 
 # ============================================================================================ #
