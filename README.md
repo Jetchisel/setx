@@ -59,8 +59,6 @@ break its syntax and will add more bugs in the script in question.
 ## TODO:
 Add option to show carriage returns, and option to delete it too.
 
-Replace grep with a while read loop. (maybe :))
-
 ## Other resources:
 
 For more info about debugging please have a look at the following site.
