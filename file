@@ -1,0 +1,54 @@
+at:x:25:25:Batch jobs daemon:/var/spool/atjobs:/bin/bash									
+PS4='+($?) $BASH_SOURCE:$FUNCNAME:$LINENO:' #_P_S_4_#									
+set -x #_S_E_T_X_#									
+avahi:x:486:485:User for Avahi:/run/avahi-daemon:/bin/false									
+avahi-autoipd:x:499:499:User for Avahi IPv4LL:/var/lib/avahi-autoipd:/bin/false									
+bin:x:1:1:bin:/bin:/bin/bash									
+cyrus:x:96:12:user for cyrus-imapd:/var/lib/imap:/sbin/nologin									
+daemon:x:2:2:Daemon:/sbin:/bin/bash									
+ddclient:x:480:476:DDClient User:/var/cache/ddclient:/bin/false									
+dhcpd:x:476:65534:DHCP server daemon:/var/lib/dhcp:/bin/false									
+dnsmasq:x:495:65534:dnsmasq:/var/lib/empty:/bin/false									
+fetchmail:x:478:2:mail retrieval daemon:/var/lib/fetchmail:/bin/false									
+ftp:x:40:49:FTP account:/srv/ftp:/bin/bash									
+ftpsecure:x:475:65534:Secure FTP User:/var/lib/empty:/bin/false									
+games:x:12:100:Games account:/var/games:/bin/bash									
+ldap:x:76:70:User for OpenLDAP:/var/lib/ldap:/bin/bash									
+lp:x:4:7:Printing daemon:/var/spool/lpd:/bin/bash									
+mail:x:8:12:Mailer daemon:/var/spool/clientmqueue:/bin/false									
+mailman:x:72:67:GNU mailing list manager:/var/lib/mailman:/bin/bash									
+man:x:13:62:Manual pages viewer:/var/cache/man:/bin/bash									
+messagebus:x:498:496:User for D-Bus:/var/run/dbus:/bin/false									
+mysql:x:60:482:MySQL database admin:/var/lib/mysql:/bin/false									
+nagios:x:477:474:User for Nagios:/var/lib/nagios:/bin/false									
+named:x:44:44:Name server daemon:/var/lib/named:/bin/false									
+news:x:9:13:News system:/etc/news:/bin/bash									
+nm-openvpn:x:485:484:NetworkManager user for OpenVPN:/var/lib/openvpn:/sbin/nologin									
+nobody:x:65534:65533:nobody:/var/lib/nobody:/bin/bash									
+nscd:x:497:494:User for nscd:/run/nscd:/sbin/nologin									
+ntp:x:74:495:NTP daemon:/var/lib/ntp:/bin/false									
+obsrun:x:473:471:User for build service backend:/usr/lib/obs:/bin/false									
+openslp:x:474:2:openslp daemon:/var/lib/empty:/sbin/nologin									
+pesign:x:483:480:PE-COFF signing daemon:/var/lib/pesign:/bin/false									
+polkitd:x:493:491:User for polkitd:/var/lib/polkit:/sbin/nologin									
+postfix:x:51:51:Postfix Daemon:/var/spool/postfix:/bin/false									
+pulse:x:488:487:PulseAudio daemon:/var/lib/pulseaudio:/sbin/nologin									
+quagga:x:479:475:Quagga routing daemon:/run/quagga:/usr/bin/false									
+radvd:x:481:100:Router ADVertisement Daemon for:/var/lib/empty:/sbin/nologin									
+root:x:0:0:root:/root:/bin/bash									
+rpc:x:489:65534:user for rpcbind:/var/lib/empty:/sbin/nologin									
+trap '(read -p "[$BASH_SOURCE:$LINENO] $BASH_COMMAND? ")' DEBUG #_T_R_A_P_#									
+#(setx)#rtkit:x:491:489:RealtimeKit:/proc:/bin/false									
+#(setx)#scard:x:490:488:Smart Card Reader:/var/run/pcscd:/usr/sbin/nologin									
+#(setx)#sddm:x:484:483:SDDM daemon:/var/lib/sddm:/bin/false									
+#(setx)#squid:x:31:65534:WWW-proxy squid:/var/cache/squid:/bin/false									
+#(setx)#sshd:x:492:490:SSH daemon:/var/lib/sshd:/bin/false									
+#(setx)#statd:x:487:65534:NFS statd daemon:/var/lib/nfs:/sbin/nologin									
+#(setx)#svn:x:482:478:user for Apache Subversion svnserve:/srv/svn:/sbin/nologin									
+#(setx)#tftp:x:496:493:TFTP account:/srv/tftpboot:/bin/false									
+#(setx)#uucp:x:10:14:Unix-to-Unix CoPy system:/etc/uucp:/bin/bash									
+#(setx)#vnc:x:494:492:user for VNC:/var/lib/empty:/sbin/nologin									
+vscan:x:65:472:Vscan account:/var/spool/amavis:/bin/false									
+wwwrun:x:30:8:WWW daemon apache:/var/lib/wwwrun:/bin/false									
+jetchisel:x:1000:100::/home/jetchisel:/bin/bash									
+watchkeeper:x:1001:100::/home/watchkeeper:/bin/bash									

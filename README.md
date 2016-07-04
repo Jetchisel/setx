@@ -37,7 +37,7 @@ setx [OPTION]... [FILE]
 -x ,10 FILE          Insert `set +x' at the 10th line of file.
 -X FILE              Insert `set -x' and a `PS4' at the second line of FILE.
 -X 5 FILE            Insert `set -x' and a `PS4' at the fifth line of FILE.
--X 5,10 FILE         Insert `set -x' and a `PS4' at the fifth line and \`set +x' at the 10th.
+-X 5,10 FILE         Insert `set -x' and a `PS4' at the fifth line and `set +x' at the 10th.
 -t FILE              Insert a trap at the second line of FILE.
 -t 5 FILE            Insert a trap at the fifth line of FILE.
 -p [keyword] FILE    Print the [keyword] code if found in FILE.

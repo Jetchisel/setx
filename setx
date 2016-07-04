@@ -6,14 +6,14 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION]... [FILE]                                                   #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Sun Jul  3 22:24:11 PHT 2016 / Sun Jul  3 14:24:11 UTC 2016               #
+#: Last Edit       : Mon Jul  4 17:34:29 PHT 2016 / Mon Jul  4 09:34:29 UTC 2016               #
 #: License         : Apache-2.0                                                                #
-#: Version         : 3.0.0                                                                     #
+#: Version         : 3.2.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
 #: Description     : Insert/remove `Debug codes' in a file/script plus more.                   #
 #: Options         : -[achptrxX]                                                               #
 #: Home Page       : https://github.com/Jetchisel/setx                                         #
-#: ExtComm         : cat,ed,file,grep                                                          #
+#: ExtComm         : cat,ed,file                                                               #
 # ============================================================================================ #
 
 # ******************************************************************************************** #
@@ -48,13 +48,13 @@ die() {
 # ******************************************************************************************** #
 
 Missing=()
-ExtComm=(cat ed file grep)
+ExtComm=(cat ed file)
 MissingMessage="is either not installed or it is not in your PATH!"
 ExitMessage="Please install the following: "
 
 for apps in "${ExtComm[@]}"; do
   if ! type -P "$apps" >/dev/null; then
-    printf '%s %s\n' "$apps" "$MissingMessage" >&2
+    printf '%s %s\n' "$apps $MissingMessage" >&2
     Missing+=("$apps")
   fi
 done
@@ -86,7 +86,7 @@ Examples:
 
 ${BASH_SOURCE##*/} -c FILE              Add a # in front of all lines.
 ${BASH_SOURCE##*/} -c 1 FILE            Add a # in front of the first line.
-${BASH_SOURCE##*/} -c 10,20 FILE        Add a # in front of lines 10 to 20.
+${BASH_SOURCE##*/} -c 10,20 FILE        Add a # in front of lines from 10 to 20.
 ${BASH_SOURCE##*/} -x FILE              Insert \`set -x' at the second line of FILE.
 ${BASH_SOURCE##*/} -x 5 FILE            Insert \`set -x' at the fifth line of FILE.
 ${BASH_SOURCE##*/} -x 5,10 FILE         Insert \`set -x' at the fifth line and \`set +x' at the 10th.
@@ -109,7 +109,6 @@ Keywords:
 Caveat:
   Inserting any code inside the case statement for example will surely
   break its syntax and will add more bugs in the script in question.
-
 EOF
 }
 
@@ -124,7 +123,7 @@ About() {
 
                            setx
 
-A bash  shell script that inserts \`set [+-]x'  and a \`PS4' debug
+A  bash  shell script  that  insert \`set [+-]x'  and a \`PS4' debug
 code or a trap to make the script  execute line by  line by  using
 the  return  key.  Shell  script is  more  verbose  when  the code
 is added in the script in question. It is quite handy when writing
@@ -152,6 +151,11 @@ EOF
 #                                                                                              #
 # ******************************************************************************************** #
 
+b=$(tput bold)
+g=$(tput setaf 2)
+reset=$(tput sgr0)
+lb=$(tput setaf 6)
+rb=$(tput setaf 1; printf '%s' "$b")
 setxcode='set -x #_S_E_T_X_#'
 commentcode="#(${BASH_SOURCE##*/})#"
 endsetxcode='set +x #_E_N_D_S_E_T_X_#'
@@ -240,7 +244,6 @@ done
 #                        Test if [-x|--xtrace] is given and process it.                        #
 #                                                                                              #
 # ******************************************************************************************** #
-
 
 if ((${#xtrace[@]} == 1)); then
   xtraceOneLine=1
@@ -411,12 +414,68 @@ fi
 
 # ******************************************************************************************** #
 #                                                                                              #
+#                    Place line numbers before the line in the whole FiLe.                     #
+#                                                                                              #
+# ******************************************************************************************** #
+
+WholeLineofFiLe() {
+  local line n=1
+  while IFS= read -u4 -r line; do
+    printf "%2d%s\n" "$n" ":$line"
+    ((n++))
+  done 4< "$FiLe"
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#               Save the line with `set -x' in the variable IsetXcode if found.                #
+#                                                                                              #
+# ******************************************************************************************** #
+
+IsetXcode=$(
+  while IFS= read -r line; do
+    if [[ ${line#*:} = "$setxcode"* ]]; then
+      printf '%s\n' "$line"
+    fi
+  done < <(WholeLineofFiLe)
+)
+
+# ******************************************************************************************** #
+#                                                                                              #
+#              Save the line with `set +x' in the variable IsetEndcode if found.               #
+#                                                                                              #
+# ******************************************************************************************** #
+
+IsetEndcode=$(
+  while IFS= read -r line; do
+    if [[ ${line#*:} = "$endsetxcode"* ]]; then
+      printf '%s\n' "$line"
+    fi
+  done < <(WholeLineofFiLe)
+)
+
+# ******************************************************************************************** #
+#                                                                                              #
+#             Save the line with `trap' code in the variable IstrapCode if found.              #
+#                                                                                              #
+# ******************************************************************************************** #
+
+IstrapCode=$(
+  while IFS= read -r line; do
+    if [[ ${line#*:} = "$trapcode"* ]]; then
+      printf '%s\n' "$line"
+    fi
+  done < <(WholeLineofFiLe)
+)
+
+# ******************************************************************************************** #
+#                                                                                              #
 # Function to add `set -x' and `set +x' at the second line or at a specific line if specified. #
 #                                                                                              #
 # ******************************************************************************************** #
 
 Insertx() {
-  local Start End Xcode xcode StartLine EndLine
+  local Start End StartLine EndLine
 
   [[ $xtraceOneLine ]] && Start=$xtraceOneLine StartLine=$Start
   [[ $xtraceOneLineStart ]] && Start=$xtraceOneLineStart StartLine=$Start
@@ -429,20 +488,20 @@ Insertx() {
   [[ $EndLine -gt $TotalLines ]] && die "$EndLine is more than $TotalLines lines of $FiLe" 1
 
   if [[ $StartLine ]]; then
-    if Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
-      die "$FiLe has ${setxcode%+( )*} code at line ${Xcode%%:*}" 1
-    elif xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
-      if [[ $StartLine -le ${xcode%%:*} ]]; then
-        die "${endsetxcode%+( )*} is at line ${xcode%:*} which should come after ${setxcode%+( )*}"
+    if [[ $IsetXcode ]]; then
+      die "$FiLe has ${setxcode%+( )*} code at line ${IsetXcode%%:*}." 1
+    elif [[ $IsetEndcode ]]; then
+      if [[ $StartLine -le ${IsetEndcode%%:*} ]]; then
+        die "${endsetxcode%+( )*} is at line ${IsetEndcode%:*} which should come after ${setxcode%+( )*}"
       fi
     fi
   fi
 
   if [[ $EndLine ]]; then
-    if xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
-      die "$FiLe has ${endsetxcode%+( )*} code at line ${xcode%%:*}" 1
-    elif Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
-      if [[ $EndLine -le ${Xcode%%:*} ]]; then
+     if [[ $IsetEndcode ]]; then
+       die "$FiLe has ${endsetxcode%+( )*} code at line ${IsetEndcode%%:*}" 1
+     elif [[ $IsetXcode ]]; then
+      if [[ $EndLine -le ${IsetXcode%%:*} ]]; then
         die "${setxcode%+( )*} before ${endsetxcode%+( )*}"
       fi
     fi
@@ -451,32 +510,32 @@ Insertx() {
   if [[ $StartLine && $EndLine ]]; then
     if [[ $StartLine -eq 1 ]]; then
       printf '%s\n' H "2i" "$setxcode" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${setxcode%+( )*} at the second line and ${endsetxcode%+( )*} at line $EndLine of $FiLe."
+      warn "Inserted $rb${setxcode%+( )*}$reset at the second line and $rb${endsetxcode%+( )*}$reset at line $EndLine of $FiLe."
     else
       printf '%s\n' H "${StartLine}i" "$setxcode" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${setxcode%+( )*} at line $StartLine and ${endsetxcode%+( )*} at line $EndLine of $FiLe."
+      warn "Inserted $rb${setxcode%+( )*}$reset at line $StartLine and $rb${endsetxcode%+( )*}$reset at line $EndLine of $FiLe."
     fi
   elif [[ $StartLine ]]; then
     if [[ $TotalLines -eq 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H '$a' "$setxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${setxcode%+( )*} at the last line of $FiLe."
+      warn "Inserted $rb${setxcode%+( )*}$reset at the last line of $FiLe."
     elif [[ $TotalLines -gt 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H "2i" "$setxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${setxcode%+( )*} at the second line of $FiLe."
+      warn "Inserted $rb${setxcode%+( )*}$reset at the second line of $FiLe."
     elif [[ $TotalLines -ge 1 ]]; then
       printf '%s\n' H "${StartLine}i" "$setxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${setxcode%+( )*} at line $StartLine of $FiLe."
+      warn "Inserted $rb${setxcode%+( )*}$reset at line $StartLine of $FiLe."
     fi
   elif [[ $EndLine ]]; then
     if [[ $TotalLines -eq 1 && $EndLine -eq 1 ]]; then
       printf '%s\n' H '$a' "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${endsetxcode%+( )*} at the last line of $FiLe."
+      warn "Inserted $rb${endsetxcode%+( )*}$reset at the last line of $FiLe."
     elif [[ $TotalLines -gt 1 && $EndLine -eq 1 ]]; then
       printf '%s\n' H "2i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${endsetxcode%+( )*} at the second line of $FiLe."
+      warn "Inserted $rb${endsetxcode%+( )*}$reset at the second line of $FiLe."
     else
       printf '%s\n' H "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${endsetxcode%+( )*} at line $EndLine of $FiLe."
+      warn "Inserted $rb${endsetxcode%+( )*}$reset at line $EndLine of $FiLe."
     fi
   fi
 }
@@ -488,7 +547,7 @@ Insertx() {
 # ******************************************************************************************** #
 
 InsertX() {
-  local SetxCode Start End Xcode xcode StartLine EndLine
+  local SetxCode Start End StartLine EndLine
   SetxCode=("$ps4code" "$setxcode")
 
   [[ $XtraceOneLine ]] && Start=$XtraceOneLine StartLine=$Start
@@ -498,25 +557,25 @@ InsertX() {
     Start=$XtraceTwoLineStart StartLine=$Start
     End=$XtraceTwoLineEnd EndLine=$End
   fi
-  [[ $StartLine -gt $TotalLines ]] && die "$StartLine is more than $TotalLines lines of $FiLe" 1
-  [[ $EndLine -gt $TotalLines ]] && die "$EndLine is more than $TotalLines lines of $FiLe" 1
+  [[ $StartLine -gt $TotalLines ]] && die "$rb$StartLine$reset is more than $TotalLines lines of $FiLe" 1
+  [[ $EndLine -gt $TotalLines ]] && die "$rb$EndLine$reset is more than $TotalLines lines of $FiLe" 1
 
   if [[ $StartLine ]]; then
-    if Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
-      die "$FiLe has ${setxcode%+( )*} code at line ${Xcode%%:*}" 1
-    elif xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
-      if [[ $StartLine -le ${xcode%%:*} ]]; then
-        die "${endsetxcode%+( )*} is at line ${xcode%:*} which should come after ${setxcode%+( )*}"
+    if [[ $IsetXcode ]]; then
+      die "$FiLe has $rb${setxcode%+( )*}$reset code at line $rb${IsetXcode%%:*}$reset" 1
+    elif [[ $IsetEndcode ]]; then
+      if [[ $StartLine -le ${IsetEndcode%%:*} ]]; then
+        die "$rb${endsetxcode%+( )*}$reset is at line $rb${IsetEndcode%:*}$reset which should come after $rb${setxcode%+( )*}$reset"
       fi
     fi
   fi
 
   if [[ $EndLine ]]; then
-    if xcode=$(grep -Fwxne "$endsetxcode" "$FiLe"); then
-      die "$FiLe has ${endsetxcode%+( )*} code at line ${xcode%%:*}" 1
-    elif Xcode=$(grep -Fwxne "$setxcode" "$FiLe"); then
-      if [[ $EndLine -le ${Xcode%%:*} ]]; then
-        die "${setxcode%+( )*} before ${endsetxcode%+( )*}"
+    if [[ $IsetEndcode ]]; then
+      die "$FiLe has $rb${endsetxcode%+( )*}$reset code at line $rb${IsetEndcode%%:*}$reset" 1
+    elif [[ $IsetXcode ]]; then
+      if [[ $EndLine -le ${IsetXcode%%:*} ]]; then
+        die "$rb${setxcode%+( )*}$reset before $rb${endsetxcode%+( )*}.$reset"
       fi
     fi
   fi
@@ -524,32 +583,32 @@ InsertX() {
   if [[ $StartLine && $EndLine ]]; then
     if [[ $StartLine -eq 1 ]]; then
       printf '%s\n' H "2i" "${SetxCode[@]}" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${SetxCode[*]} at line 2 and $endsetxcode at $EndLine in $FiLe."
+      warn "Inserted $rb${SetxCode[*]}$reset at line 2 and $rb$endsetxcode$reset at $rb$EndLine$reset in $FiLe."
     else
       printf '%s\n' H "${StartLine}i" "${SetxCode[@]}" . "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at line $StartLine and ${endsetxcode%+( )*} at line $EndLine in $FiLe."
+      warn "Inserted $rb${ps4code%+( )*}$reset,$rb${setxcode%+( )*}$reset at line $rb$StartLine$reset and $rb${endsetxcode%+( )*}$reset at line $EndLine in $FiLe."
     fi
   elif [[ $StartLine ]]; then
     if [[ $TotalLines -eq 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H '$a' "${SetxCode[@]}" . w q | ed -s "$FiLe"
-      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at the last line of $FiLe."
+      warn "Inserted $rb${ps4code%+( )*}$reset,$rb${setxcode%+( )*}$reset at the last line of $FiLe."
     elif [[ $TotalLines -gt 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H "2i" "${SetxCode[@]}" . w q | ed -s "$FiLe"
-      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at the second line of $FiLe."
+      warn "Inserted $rb${ps4code%+( )*}$reset,$rb${setxcode%+( )*}$reset at the second line of $FiLe."
     elif [[ $TotalLines -ge 1 ]]; then ##&& StartLine > 1)); then
       printf '%s\n' H "${StartLine}i" "${SetxCode[@]}" . w q | ed -s "$FiLe"
-      warn "Inserted ${ps4code%+( )*},${setxcode%+( )*} at line $StartLine $FiLe."
+      warn "Inserted $rb${ps4code%+( )*}$reset,$rb${setxcode%+( )*}$reset at line $StartLine $FiLe."
     fi
   elif [[ $EndLine ]]; then
     if [[ $TotalLines -eq 1 && $EndLine -eq 1 ]]; then
       printf '%s\n' H '$a' "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${endsetxcode%+( )*} at the last line of $FiLe."
+      warn "Inserted $rb${endsetxcode%+( )*}$reset at the last line of $FiLe."
     elif [[ $TotalLines -gt 1 && $EndLine -eq 1 ]]; then
       printf '%s\n' H "2i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${endsetxcode%+( )*} at the second line of $FiLe."
+      warn "Inserted $rb${endsetxcode%+( )*}$reset at the second line of $FiLe."
     else
       printf '%s\n' H "${EndLine}i" "$endsetxcode" . w q | ed -s "$FiLe"
-      warn "Inserted ${endsetxcode%+( )*} at line $EndLine of $FiLe."
+      warn "Inserted $rb${endsetxcode%+( )*}$reset at line $EndLine of $FiLe."
     fi
   fi
 }
@@ -561,22 +620,22 @@ InsertX() {
 # ******************************************************************************************** #
 
 InsertTrap() {
-  local StartLine=$trapOneLine Xcode
-  if Xcode=$(grep -Fnwxe "$trapcode" "$FiLe"); then
-    die "$FiLe has \`${trapcode%+( )*}' at line ${Xcode%%:*}." 1
+  local StartLine=$trapOneLine
+  if [[ $IstrapCode ]]; then
+    die "$FiLe has \`${trapcode%+( )*}' at line ${IstrapCode%%:*}." 1
   fi
   if [[ $StartLine ]]; then
     if [[ $StartLine -gt $TotalLines ]]; then
-      die "$StartLine is more than $TotalLines line(s) of $FiLe"
+      die "$rb$StartLine$reset is more than $rb$TotalLines$reset line(s) of $FiLe"
     elif [[ $TotalLines -eq 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H '$a' "$trapcode" . w q | ed -s "$FiLe"
-      warn "Inserted \`${trapcode%+( )*}' at the last line of $FiLe."
+      warn "Inserted \`$rb${trapcode%+( )*}$reset' at the last line of $FiLe."
     elif [[ $TotalLines -gt 1 && $StartLine -eq 1 ]]; then
       printf '%s\n' H "2i" "$trapcode" . w q | ed -s "$FiLe"
-      warn "Inserted \`${trapcode%+( )*}' at the second line of $FiLe."
+      warn "Inserted \`$rb${trapcode%+( )*}$reset' at the second line of $FiLe."
     elif [[ $TotalLines -ge 1 ]]; then
       printf '%s\n' H "${StartLine}i" "$trapcode" . w q | ed -s "$FiLe"
-      warn "Inserted \`${trapcode%+( )*}' at line $StartLine of $FiLe."
+      warn "Inserted \`$rb${trapcode%+( )*}$reset' at line $StartLine of $FiLe."
     fi
   fi
 }
@@ -599,25 +658,25 @@ Comment() {
 
   if [[ $StartLine && $EndLine ]]; then
     if [[ $EndLine -gt $TotalLines && $StartLine -gt $TotalLines ]]; then
-      die "$EndLine && $StartLine is more than $TotalLines lines of $FiLe"
+      die "$rb$EndLine$reset & $rb$StartLine$reset is more than $rb$TotalLines$reset lines of $FiLe"
     elif [[ $StartLine -gt $TotalLines ]]; then
-      die "$StartLine more than $TotalLines lines of $FiLe" 1
+      die "$rb$StartLine$reset more than $rb$TotalLines$reset lines of $FiLe" 1
     elif [[ $EndLine -gt $TotalLines ]]; then
-      die "$EndLine more than $TotalLines lines of $FiLe" 1
+      die "$rb$EndLine$reset more than $rb$TotalLines$reset lines of $FiLe" 1
     elif [[ $StartLine -ge $EndLine ]]; then
-      die "Comment starts at $StartLine must be lower than where it ends at $EndLine" 1
+      die "Comment starts at $rb$StartLine$reset must be lower than where it ends at $rb$EndLine$reset" 1
     else
       printf '%s\n' H "${StartLine},${EndLine}s/^/$commentcode/" w q | ed -s "$FiLe"
-      warn "Commented lines from $StartLine to $EndLine in $FiLe."
+      warn "Commented lines from $rb$StartLine$reset to $rb$EndLine$reset in $FiLe."
     fi
   elif [[ $StartLine ]]; then
     [[ $StartLine -gt $TotalLines ]] && die "$StartLine is more than $TotalLines lines of $FiLe" 1
     printf '%s\n' H "${StartLine},s/^/$commentcode/" w q | ed -s "$FiLe"
-    warn "Line $StartLine has been commented in $FiLe."
+    warn "Line $rb$StartLine$reset has been commented in $FiLe."
   elif [[ $EndLine ]]; then
     [[ $EndLine -gt $TotalLines ]] && die "$EndLine is more than $TotalLines lines of $FiLe" 1
     printf '%s\n' H "${EndLine},s/^/$commentcode/" w q | ed -s "$FiLe"
-    warn "Line $EndLine has been commented in $FiLe."
+    warn "Line $rb$EndLine$reset has been commented in $FiLe."
   elif [[ $StartEndLines ]]; then
     printf '%s\n' H ",s/^/$commentcode/" w q | ed -s "$FiLe"
     warn "All lines has been commented in $FiLe"
@@ -631,14 +690,13 @@ Comment() {
 # ******************************************************************************************** #
 
 Pcomment() {
-  local IFS line i=1 commentline=()
+  local IFS line commentline=()
   while IFS= read -r line; do
-    if [[ $line = "$commentcode"* ]]; then
-      printf "%2d:%s\n" "$i" "$line"
+    if [[ ${line#*:} = "$commentcode"* ]]; then
+      printf '%s\n' "${line//"$commentcode"/$rb$commentcode$reset}"
       commentline+=("$line")
     fi
-    ((i++))
-  done < "$FiLe"
+  done < <(WholeLineofFiLe)
 
   if ((!${#commentline[@]})); then
     warn "No comment found in $FiLe."
@@ -670,14 +728,13 @@ RemoveComment() {
 # ******************************************************************************************** #
 
 Ptspace() {
-  local line IFS i=1 tspaceline=()
+  local line IFS tspaceline=()
   while IFS= read -u4 -r line; do
     if [[ $line = *[[:blank:]] ]]; then
-      printf "%2d:%s*\n" "$i" "$line"
+      printf "%s${rb}*${reset}\n" "$line"
       tspaceline+=("$line")
     fi
-    ((i++))
-  done 4< "$FiLe"
+  done 4< <(WholeLineofFiLe)
 
   if ((!${#tspaceline[@]})); then
     warn "No trailing white space found in $FiLe."
@@ -709,12 +766,23 @@ RemoveTspace() {
 # ******************************************************************************************** #
 
 Pdebug() {
-  if [[ $printFiLe ]]; then
-    if ! grep --color=auto -Fnxwe "$setxcode" -Fnxwe "$trapcode" -Fnwxe "$ps4code" -Fnwxe "$endsetxcode" "$FiLe"; then
-      warn "$FiLe does not contain any debug code!"
-      return 1
+  local line LineNumber OnlyLine Colon
+  MatchLine=()
+  while read -r line; do
+    if [[ "${line#*:}" = @("$setxcode"|"$endsetxcode"|"$ps4code"|"$trapcode")* ]]; then
+      OnlyLine=${line#*:}
+      LineNumber=${line%%:*}
+      Colon=${lb}:${reset}
+      printf '%s%s%s\n' "$g$LineNumber$reset" "$Colon" "$rb${OnlyLine%+( )*}$reset"
+      MatchLine+=("$line")
     fi
+  done < <(WholeLineofFiLe)
+
+  if ((!${#MatchLine[@]})); then
+    warn "$FiLe does not contain any debug code!"
+    return 1
   fi
+  return 0
 }
 
 # ******************************************************************************************** #
@@ -763,15 +831,17 @@ RemoveInsertTrap() {
 #                                                                                              #
 # ******************************************************************************************** #
 
-RemoveDebug()  {
-  for i in "$setxcode" "$ps4code" "$trapcode" "$endsetxcode"; do
-    val=$(grep -Fnwxe "$i" "$removeFiLe") && status+=("$val")
-    [[ ${val#*:} = "$trapcode" ]] && RemoveInsertTrap && warn "${trapcode%+( )*} deleted in file $FiLe at line ${val%%:*}"
-    [[ ${val#*:} = "$setxcode" ]] && RemoveInsertX && warn "${setxcode%+( )*} deleted in file $FiLe at line ${val%%:*}"
-    [[ ${val#*:} = "$ps4code" ]] && RemoveInsertPs4 && warn "${ps4code%+( )*} deleted in file $FiLe at line ${val%%:*}"
-    [[ ${val#*:} = "$endsetxcode" ]] && RemoveEndXcode && warn "${endsetxcode%+( )*} deleted in file $FiLe at line ${val%%:*}"
-  done
+RemoveDebug() {
+  local line status=()
+  while read -r line; do
+    [[ ${line#*:} = @("$setxcode"|"$endsetxcode"|"$ps4code"|"$trapcode")* ]] && status+=("$line")
+    [[ ${line#*:} = "$trapcode"* ]] && RemoveInsertTrap && warn "$rb${trapcode%+( )*}$reset deleted in file $FiLe at line ${line%%:*}."
+    [[ ${line#*:} = "$setxcode"* ]] && RemoveInsertX && warn "$rb${setxcode%+( )*}$reset deleted in file $FiLe at line ${line%%:*}"
+    [[ ${line#*:} = "$ps4code"* ]] && RemoveInsertPs4 && warn "$rb${ps4code%+( )*}$reset deleted in file $FiLe at line ${line%%:*}"
+    [[ ${line#*:} = "$endsetxcode"* ]]  && RemoveEndXcode && warn "$rb${endsetxcode%+( )*}$reset deleted in file $FiLe at line ${line%%:*}"
+  done < <(WholeLineofFiLe)
   ((!${#status[@]})) && die "$removeFiLe does not contain any debug code!" 1
+  return 0
 }
 
 # ******************************************************************************************** #
@@ -796,7 +866,7 @@ Remove() {
 # ******************************************************************************************** #
 
 Print() {
-  case "$printArg" in
+  case $printArg in
     tspace) Ptspace ;;
     comment) Pcomment ;;
     debug) Pdebug ;;
