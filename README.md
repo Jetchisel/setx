@@ -4,8 +4,8 @@ https://github.com/Jetchisel/setx
 
 Copyright 2016 Jetchisel
 
-A  bash  shell  script  that  insert  set [+-]x  and  a  PS4 debug 
-code or a trap to make the script  execute line by  line by  using 
+A  bash  shell  script  that  insert  set [+-]x  and  a  PS4 debug
+code or a trap to make the script  execute line by  line by  using
 the  return  key.  Shell  script is  more  verbose  when  the code
 is added in the script in question. It is quite handy when writing
 and testing a shell script.
@@ -17,7 +17,7 @@ setx [OPTION]... [FILE]
 ## Options:
 ```
   -h  --help     Show this help.
-  -a, --about    Show a brief info about ${BASH_SOURCE##*/}.
+  -a, --about    Show a brief info about setx.
   -c, --comment  Add a # in front of a line.
   -r, --remove   Remove all the [keyword] code.
   -x, --xtrace   Add `set -x' code to the second line by default.
@@ -55,6 +55,11 @@ setx [OPTION]... [FILE]
 Inserting any code inside the case statement for example will surely
 break its syntax and will add more bugs in the script in question.
 
+## Note:
+If you're fluid with one of the unix editor such as ex, ed or vim then
+this script is probably no use to you since everything here can be done
+in one of those editor but until then this script should make your life
+more easier.
 
 ## TODO:
 Add option to show carriage returns, and option to delete it too.

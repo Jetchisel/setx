@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION]... [FILE]                                                   #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Mon Jul  4 17:34:29 PHT 2016 / Mon Jul  4 09:34:29 UTC 2016               #
+#: Last Edit       : Wed Jul 13 08:45:37 PHT 2016 / Wed Jul 13 00:45:37 UTC 2016               #
 #: License         : Apache-2.0                                                                #
 #: Version         : 3.2.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
