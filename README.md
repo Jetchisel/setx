@@ -47,6 +47,7 @@ setx [OPTION]... [FILE]
 ## Keywords:
 ```
   debug    All the debug codes `set [+-]x', and the `trap'.
+  cr       All the carriage returns that is normally found in a Dos/Windows file.
   comment  All the lines that has been commented by adding a # in front.
   tspace   All the lines that has trailing white space.
 ```
@@ -56,13 +57,10 @@ Inserting any code inside the case statement for example will surely
 break its syntax and will add more bugs in the script in question.
 
 ## Note:
-If you're fluid with one of the unix editor such as ex, ed or vim then
-this script is probably no use to you since everything here can be done
-in one of those editor but until then this script should make your life
-more easier.
-
-## TODO:
-Add option to show carriage returns, and option to delete it too.
+If you're fluid with one of the unix file editor such as ex, ed or vim
+then this script is probably no use to you since everything here can be
+done in one of those file editor, but until then this script should make
+your life more easier.
 
 ## Other resources:
 

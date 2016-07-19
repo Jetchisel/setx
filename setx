@@ -6,9 +6,9 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION]... [FILE]                                                   #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Wed Jul 13 08:45:37 PHT 2016 / Wed Jul 13 00:45:37 UTC 2016               #
+#: Last Edit       : Tue Jul 19 12:11:04 PHT 2016 / Tue Jul 19 04:11:04 UTC 2016               #
 #: License         : Apache-2.0                                                                #
-#: Version         : 3.2.0                                                                     #
+#: Version         : 3.4.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
 #: Description     : Insert/remove `Debug codes' in a file/script plus more.                   #
 #: Options         : -[achptrxX]                                                               #
@@ -351,7 +351,7 @@ if ((${#print[@]})); then
   if ((${#print[@]} < 2)); then
     die "[-p|--print] Needs two argument [keyword] and [file]" 1
   elif ((${#print[@]} == 2)); then
-    [[ ${print[0]} != @(tspace|comment|debug) ]] && die "Invalid argument ${print[0]}" 1
+    [[ ${print[0]} != @(cr|tspace|comment|debug) ]] && die "Invalid argument ${print[0]}" 1
     printArg=${print[0]}
     printFiLe=${print[1]}
   fi
@@ -367,7 +367,7 @@ if ((${#remove[@]})); then
   if ((${#remove[@]} < 2)); then
     die "[-r|--remove] Needs two argument [keyword] and [file]" 1
   elif ((${#remove[@]} == 2)); then
-    [[ ${remove[0]} != @(tspace|comment|debug) ]] && die "Invalid argument ${remove[0]}" 1
+    [[ ${remove[0]} != @(cr|tspace|comment|debug) ]] && die "Invalid argument ${remove[0]}" 1
     RemoveArg=${remove[0]}
     removeFiLe=${remove[1]}
   fi
@@ -685,6 +685,44 @@ Comment() {
 
 # ******************************************************************************************** #
 #                                                                                              #
+#                              Function to show Carriage returns.                              #
+#                                                                                              #
+# ******************************************************************************************** #
+
+Pcarriage() {
+  local IFS line n=1 pcarriage=()
+  while IFS= read -r line; do
+    if [[ $line = *'\r$' ]]; then
+      printf '%s%s\n' "$g$n$reset" "${lb}:$reset${line//'\r$'/${rb}\\r\$${reset}}"
+      pcarriage+=("$line")
+      ((n++))
+    fi
+  done < <(ed -s "$FiLe" <<< $'%l')
+  if ((!${#pcarriage[@]})); then
+    warn "No Carriage return found in $FiLe."
+    return 1
+  fi
+  return 0
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
+#                             Function to delete Carriage returns.                             #
+#                                                                                              #
+# ******************************************************************************************** #
+
+RemoveCarriage() {
+  if Pcarriage >/dev/null; then
+    ed -s "$FiLe" <<< $',s/\r$//g\nwq'
+    warn "Carriage returns deleted in $FiLe."
+    return 0
+  fi
+  warn "No Carriage return found in $FiLe."
+  return 1
+}
+
+# ******************************************************************************************** #
+#                                                                                              #
 #                 Function to print the commented lines that starts with a #.                  #
 #                                                                                              #
 # ******************************************************************************************** #
@@ -852,6 +890,7 @@ RemoveDebug() {
 
 Remove() {
   case $RemoveArg in
+    cr) RemoveCarriage;;
     debug) RemoveDebug;;
     comment) RemoveComment;;
     tspace) RemoveTspace;;
@@ -867,9 +906,10 @@ Remove() {
 
 Print() {
   case $printArg in
-    tspace) Ptspace ;;
+    cr) Pcarriage;;
     comment) Pcomment ;;
     debug) Pdebug ;;
+    tspace) Ptspace ;;
     *) die "Invalid argument \`$printArg'!";;
   esac
 }
