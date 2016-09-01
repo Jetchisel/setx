@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION]... [FILE]                                                   #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Tue Jul 19 12:11:04 PHT 2016 / Tue Jul 19 04:11:04 UTC 2016               #
+#: Last Edit       : Thu Sep  1 09:47:06 PHT 2016 / Thu Sep  1 01:47:06 UTC 2016               #
 #: License         : Apache-2.0                                                                #
 #: Version         : 3.4.0                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -383,7 +383,7 @@ for files in "$commentFiLe" "$trapFiLe" "$printFiLe" "$xtraceFiLe" "$XtraceFiLe"
   [[ $files ]] && FiLe=$files
   AllFiLes+=("$files")
 done
-[[ ! ${AllFiLes[@]} ]] && die "$(ShowHelp)" 1
+(( ${#AllFiLes[@]} )) && die "$(ShowHelp)" 1
 
 # ******************************************************************************************** #
 #                                                                                              #
