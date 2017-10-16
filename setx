@@ -6,7 +6,7 @@ shopt -s extglob
 #: Title           : setx                                                                      #
 #: Sypnosis        : setx [OPTION]... [FILE]                                                   #
 #: Date Created    : Tue May 31 15:59:31 PHT 2016 / Tue May 31 07:59:31 UTC 2016               #
-#: Last Edit       : Mon Sep 19 16:23:13 PHT 2016 / Mon Sep 19 08:23:13 UTC 2016               #
+#: Last Edit       : Mon Oct 16 11:50:40 +08 2017 / Mon Oct 16 03:50:40 UTC 2017               #
 #: License         : Apache-2.0                                                                #
 #: Version         : 3.4.2                                                                     #
 #: Author          : Jason V. Ferrer '<jetchisel@opensuse.org>'                                #
@@ -757,7 +757,7 @@ Pcomment() {
 
 RemoveComment() {
   if Pcomment >/dev/null; then
-    printf '%s\n' H ",s/^.*${commentcode}*//" w q | ed -s "$FiLe"
+    printf '%s\n' H ",s/^${commentcode}//" w q | ed -s "$FiLe"
     warn "Comments has be remove in $FiLe."
     return 0
   fi
